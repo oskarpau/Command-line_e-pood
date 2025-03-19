@@ -1,27 +1,27 @@
-plaanis
+### plaanis
 Graafikaliides
 Krüptograafia
 
-info:
+### info:
 - Tellimused
 - Lao sisu
 - Login info
 - kommentaarid
 
-Step 1:
+## Step 1:
 
 Kasutaja pärib
 Server teeb threadi, annab viite infole threadiga kaasa
 Fail ⇔ server ⇔ kasutaja/töötaja
 
-klassid:
+### klassid:
 - Server
 - Thread
 - Faililugeja
 - klient
     Kohalik kasutajainterface (commandline)
 
-failide formaat ->
+### failide formaat ->
   Serveri ja kasutaja vaheline kommunikatsioon
 nt Nimi, hind, tootenumber, viide kommentaaridele / reklaamlehele
 
