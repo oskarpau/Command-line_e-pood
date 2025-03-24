@@ -1,9 +1,9 @@
+package epood;
+
 // käsurea argumendid: file fail1.txt echo tere kaks korda file error.txt
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
