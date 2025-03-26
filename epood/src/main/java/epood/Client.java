@@ -21,32 +21,35 @@ public class Client {
              DataOutputStream dout = new DataOutputStream(socket.getOutputStream());) {
             System.out.println("connected; sending data");
 
-            // loeme requestide arvu
-            int numOfRequests = 0;
-            for (String s : argsC) {
-                if (s.equals("file") || s.equals("echo")) {
-                    numOfRequests++;
-                }
-            }
-            dout.writeInt(numOfRequests);
-            System.out.println("sent number of requests: " + numOfRequests);
+            dout.writeUTF("-help");
+            dout.writeUTF("exit");
 
-            for (int i = 0; i < argsC.size(); i++) {
-                if (argsC.get(i).equals("file")) {
-                    client.requestFile(din, dout, argsC.get(i + 1));
-                    i++;
-                } else if (argsC.get(i).equals("echo")) {
-                    List<String> msg = new ArrayList<String>();
-                    for (int i1 = i+1; i1 < argsC.size(); i1++) {
-                        if (argsC.get(i1).equals("file") || argsC.get(i1).equals("echo")) {
-                            i = i1 - 1;
-                            break;
-                        }
-                        msg.add(argsC.get(i1));
-                    }
-                    client.sendMsg(din, dout, msg);
-                }
-            }
+            // loeme requestide arvu
+//            int numOfRequests = 0;
+//            for (String s : argsC) {
+//                if (s.equals("file") || s.equals("echo")) {
+//                    numOfRequests++;
+//                }
+//            }
+//            dout.writeInt(numOfRequests);
+//            System.out.println("sent number of requests: " + numOfRequests);
+//
+//            for (int i = 0; i < argsC.size(); i++) {
+//                if (argsC.get(i).equals("file")) {
+//                    client.requestFile(din, dout, argsC.get(i + 1));
+//                    i++;
+//                } else if (argsC.get(i).equals("echo")) {
+//                    List<String> msg = new ArrayList<String>();
+//                    for (int i1 = i+1; i1 < argsC.size(); i1++) {
+//                        if (argsC.get(i1).equals("file") || argsC.get(i1).equals("echo")) {
+//                            i = i1 - 1;
+//                            break;
+//                        }
+//                        msg.add(argsC.get(i1));
+//                    }
+//                    client.sendMsg(din, dout, msg);
+//                }
+//            }
         }
         System.out.println("Client has finished");
     }

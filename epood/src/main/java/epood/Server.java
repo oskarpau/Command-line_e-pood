@@ -34,47 +34,8 @@ public class Server {
         System.out.println("Server pandi kinni, sest serveriga oli üle kahe korra ühendatud");
     }
 
-    public static class ClientHandler implements Runnable {
-        private final Socket socket;
-        private final Server server;
 
-        public ClientHandler(Socket socket, Server server) {
-            this.socket = socket;
-            this.server = server;
-        }
 
-        public void run() {
-            try (socket;
-                 DataInputStream din = new DataInputStream(socket.getInputStream());
-                 DataOutputStream dout = new DataOutputStream(socket.getOutputStream());) {
-                System.out.println("client connected; waiting for a number of messages");
-                int numOfRequests = din.readInt();
-                for (int i = 0; i < numOfRequests; i++) {
-                    int response = din.readInt();
-                    if (response == 1) {
-                        server.sendFile(din, dout);
-                    } else if (response == 0) {
-                        server.echoText(din, dout);
-                        System.out.println("Message echoed");
-                    }
-                }
-                System.out.println("Closed connection with client");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-    }
-
-    public void echoText(DataInputStream din, DataOutputStream dout) throws IOException {
-        int messageLength = din.readInt();
-        String msg = "";
-        for (int i = 0; i < messageLength; i++) {
-            msg += din.readUTF() + " ";
-        }
-        System.out.println("received message: " + msg);
-        dout.writeUTF(msg);
-    }
 
     public void sendFile(DataInputStream din, DataOutputStream dout) throws IOException {
         int bytes = 0;
