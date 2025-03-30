@@ -29,7 +29,7 @@ public class ClientHandler implements Runnable {
     public void run() {
         try (socket;
              DataInputStream din = new DataInputStream(socket.getInputStream());
-             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());) {
+             DataOutputStream dout = new DataOutputStream(socket.getOutputStream())) {
 
             //kommunikatsioon algab
             System.out.println("client connected; waiting for a command");
