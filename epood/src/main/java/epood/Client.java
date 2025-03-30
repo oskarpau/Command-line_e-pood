@@ -4,53 +4,52 @@ package epood;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 
 public class Client {
-    String path =  "received" + File.separatorChar;
 
     public static void main(String[] args) throws Exception {
-        List<String> argsC = Arrays.asList(args);
-        Client client = new Client();
 
         System.out.println("connecting to server");
         try (Socket socket = new Socket("localhost", 1337);
              DataInputStream din = new DataInputStream(socket.getInputStream());
-             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());) {
-            System.out.println("connected; sending data");
+             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
+             Scanner console = new Scanner(System.in)) {
 
-            // loeme requestide arvu
-            int numOfRequests = 0;
-            for (String s : argsC) {
-                if (s.equals("file") || s.equals("echo")) {
-                    numOfRequests++;
+            System.out.println("connected; entering command: ");
+            //suhtlus
+            while (true) {
+                writeServer(console, dout);
+                try {
+                    readServer(din);
+                } catch (EOFException e) { //handler lõpetas töö
+                    System.out.println("closing connection");
+                    break;
                 }
             }
-            dout.writeInt(numOfRequests);
-            System.out.println("sent number of requests: " + numOfRequests);
 
-            for (int i = 0; i < argsC.size(); i++) {
-                if (argsC.get(i).equals("file")) {
-                    client.requestFile(din, dout, argsC.get(i + 1));
-                    i++;
-                } else if (argsC.get(i).equals("echo")) {
-                    List<String> msg = new ArrayList<String>();
-                    for (int i1 = i+1; i1 < argsC.size(); i1++) {
-                        if (argsC.get(i1).equals("file") || argsC.get(i1).equals("echo")) {
-                            i = i1 - 1;
-                            break;
-                        }
-                        msg.add(argsC.get(i1));
-                    }
-                    client.sendMsg(din, dout, msg);
-                }
-            }
+        } finally {
+            System.out.println("Client has finished");
         }
-        System.out.println("Client has finished");
     }
 
+    private static void writeServer(Scanner console, DataOutputStream dout) throws IOException {
+        String cmd = String.valueOf(console.nextLine());//kasutaja sisend
+        dout.writeUTF(cmd);                             //saadab handlerile
+    }
+
+    private static void readServer(DataInputStream din) throws IOException {
+        int len = din.readInt();                        //mitu vastust tuleb
+        for (int i = 0; i < len; i++) {
+            System.out.println(din.readUTF());          //väljasta kasutajale
+        }
+    }
+
+
+    //vanad kodutöö meetodid, ei tea kas kasulik
+    /*
     public void sendMsg(DataInputStream din, DataOutputStream dout, List<String> msg) throws Exception {
         dout.writeInt(0);
         dout.writeInt(msg.size());
@@ -95,5 +94,6 @@ public class Client {
             }
             System.out.println("file saved");
         }
-    }
+    } */
+
 }
