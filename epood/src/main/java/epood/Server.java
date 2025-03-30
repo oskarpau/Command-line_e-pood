@@ -21,17 +21,15 @@ public class Server {
 
             try (ServerSocket ss = new ServerSocket(1337)) {
                 System.out.println("now listening on :1337");
-                int n = 0;
                 // päriselt käiks siia while True, praegu panin siia arvu, et saaks näha serveri sulgumist
-                while (n < 2) {
+                while (true) {
                     Socket clientsocket = ss.accept();
                     pool.execute(new ClientHandler(clientsocket, server));
-                    n++;
                 }
             }
         }
 
-        System.out.println("Server pandi kinni, sest serveriga oli üle kahe korra ühendatud");
+        //System.out.println("Server pandi kinni, sest serveriga oli üle kahe korra ühendatud");
     }
 
 
