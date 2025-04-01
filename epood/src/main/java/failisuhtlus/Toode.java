@@ -1,3 +1,5 @@
+package failisuhtlus;
+
 public class Toode {
     private int number;
     private String nimi;
