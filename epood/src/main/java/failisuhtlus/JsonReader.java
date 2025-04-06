@@ -65,35 +65,8 @@ public class JsonReader {
 
     private JSONObject getJSON() throws IOException {
         String content;
-        try {
-            content = new String(Files.readAllBytes(Paths.get("andmebaas.json")));
-        } catch (NoSuchFileException e) {
-            content = "{\n" +
-                    "  \"kommentaarid\":\n" +
-                    "  [\n" +
-                    "    {\n" +
-                    "      \"aeg\":\"2025-03-26 11:08:53\",\n" +
-                    "      \"toode\":1,\n" +
-                    "      \"sisu\":\"Väga head õunad\"\n" +
-                    "    }\n" +
-                    "  ],\n" +
-                    "  \"tooted\":\n" +
-                    "  [\n" +
-                    "    {\n" +
-                    "      \"nimi\":\"õun\",\n" +
-                    "      \"tootenumber\":1,\n" +
-                    "      \"hind\":0.39,\n" +
-                    "      \"lao seis\":54\n" +
-                    "    },\n" +
-                    "    {\n" +
-                    "      \"nimi\":\"pirn\",\n" +
-                    "      \"tootenumber\":2,\n" +
-                    "      \"hind\":0.59,\n" +
-                    "      \"lao seis\":32\n" +
-                    "    }\n" +
-                    "  ]\n" +
-                    "}";
-        }
+        content = new String(Files.readAllBytes(Paths.get("andmebaas.json")));
+
         return new JSONObject(content);
     }
 
