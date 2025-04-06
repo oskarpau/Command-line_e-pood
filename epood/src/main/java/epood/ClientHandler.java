@@ -1,7 +1,6 @@
 package epood;
 
-import failisuhtlus.JsonReader;
-import failisuhtlus.Toode;
+import failisuhtlus.Ostukorv;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -13,14 +12,26 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 public class ClientHandler implements Runnable {
     private final Socket socket;
     private final Server server;
-    private final JsonReader dataReader = new JsonReader("andmebaas.json");
+    private String currentScreen = "main";
+
+    private CatalogueHandler catalogueHandler;
+    private CartHandler cartHandler;
+    private OrderHandler orderHandler;
+    private SearchHandler searchHandler;
+    private Ostukorv cart;
 
     public ClientHandler(Socket socket, Server server) {
         this.socket = socket;
         this.server = server;
+        catalogueHandler = new CatalogueHandler();
+        cartHandler = new CartHandler();
+        orderHandler = new OrderHandler();
+        searchHandler = new SearchHandler();
+        cart = new Ostukorv();
     }
 
     public void run() {
@@ -28,8 +39,16 @@ public class ClientHandler implements Runnable {
              DataInputStream din = new DataInputStream(socket.getInputStream());
              DataOutputStream dout = new DataOutputStream(socket.getOutputStream())) {
 
+            // initsialiseerime vajalikud handlerid
+            CatalogueHandler catalogueHandler = new CatalogueHandler();
+
             //kommunikatsioon algab
             System.out.println("client connected; waiting for a command");
+            dout.writeInt(1);
+            dout.writeUTF("Welcome to our high speed web shop!\n" +
+                    "Please choose one of the following:\n" +
+                    "catalogue; search; cart; order; exit\n" +
+                    "type: 'back' to go back to main menu");
 
             while (true) {
                 String[] cmdFull = extractArgs(din.readUTF());
@@ -68,36 +87,76 @@ public class ClientHandler implements Runnable {
     }
 
     private void interpretCmd(String cmd, String[] args, DataInputStream din, DataOutputStream dout) throws IOException {
-        //variant 2. saab viidata ka muude klasside meetoditele jne. lisage vaid case juurde viitadega meetoditele
-        switch (cmd) {
-            case "echo" -> echo(dout, args);
-            case "help" -> help(dout);
+        if (cmd.equalsIgnoreCase("back")) {
+            if (!currentScreen.equals("main")) {
+                showMain(dout);
+                currentScreen = "main";
+                System.out.println("here");
+                System.out.println(currentScreen);
 
-            // proov toodete searchist
-            case "show" -> search(dout, "products");
-
-            default -> {
+            } else {
                 dout.writeInt(1);
-                dout.writeUTF("invalid command, for common commands type: help");
+                dout.writeUTF("Already in main menu");
+            }
+            return;
+        }
+
+        //variant 2. saab viidata ka muude klasside meetoditele jne. lisage vaid case juurde viitadega meetoditele
+        // -> süntaksi kasutamine välimises switchis viskas erroreid
+        System.out.println(currentScreen);
+        switch (currentScreen) {
+            case "main":
+                switch (cmd) {
+                    case "echo" -> echo(dout, args);
+                    case "help" -> help(dout);
+                    case "catalogue" -> {
+                        catalogueHandler.show(dout);
+                        currentScreen = "catalogue";
+                    }
+                    case "search" -> {
+                        // proov toodete searchist
+                        searchHandler.show(dout, "products");
+                        currentScreen = "search";
+                    }
+                    case "cart" -> {
+                        cartHandler.show(dout);
+                        currentScreen = "cart";
+                    }
+                    case "order" -> {
+                        orderHandler.show(dout);
+                        currentScreen = "order";
+                    }
+                    default -> {
+                        dout.writeInt(1);
+                        dout.writeUTF("invalid command, for common commands type: help");
+                    }
+                }
+                break;
+
+            case "catalogue": catalogueHandler.handler(dout, cmd, args, cart); break;
+            case "search": searchHandler.handler(dout, cmd, args, cart); break;
+            case "cart": cartHandler.handler(dout, cmd, args, cart); break;
+            case "order": orderHandler.handler(dout, cmd, args, cart); break;
+            default: {
+                System.out.println("undefined category, smth broken");
             }
         }
+
+
     }
 
-    private void search(DataOutputStream dout, String search) throws IOException {
-        System.out.println("Seaching " + search);
-        List<Toode> tooted = dataReader.getTooted();
-        if (!tooted.isEmpty()) {
-            dout.writeInt(tooted.size());
-            for (Toode t : tooted) {
-                dout.writeUTF(t.getNimi());
-            }
-        }
+    private void showMain(DataOutputStream dout) throws IOException {
+        dout.writeInt(1);
+        dout.writeUTF("Please choose one of the following:\n" +
+                "catalogue; search; cart; order; exit\n" +
+                "type: 'back' to go back to main menu");
     }
+
 
 
     private void help(DataOutputStream dout) throws IOException {
         System.out.println("helping");
-        String[] cmdList = {"exit", "help"};
+        String[] cmdList = {"exit", "help", "back", "catalogue", "search", "cart", "order"};
         dout.writeInt(cmdList.length);
         for (String cmd : cmdList) {
             dout.writeUTF(cmd);
@@ -117,4 +176,5 @@ public class ClientHandler implements Runnable {
 //        dout.writeInt(1);
 //        dout.writeUTF(msg);
     }
+
 }

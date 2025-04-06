@@ -20,6 +20,7 @@ public class Client {
 
             System.out.println("connected; entering command: ");
             //suhtlus
+            readServer(din);
             while (true) {
                 writeServer(console, dout);
                 try {

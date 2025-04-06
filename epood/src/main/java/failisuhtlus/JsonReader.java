@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,20 +18,32 @@ public class JsonReader {
         this.fail = fail;
     }
 
+
     public List<Toode> getTooted() throws IOException {
 
-        List<Toode> tooted = new ArrayList<>();
+        try {
+            List<Toode> tooted = new ArrayList<>();
 
-        JSONObject json = getJSON();
+            JSONObject json = getJSON();
 
-        JSONArray tootedArray = json.getJSONArray("tooted");
+            JSONArray tootedArray = json.getJSONArray("tooted");
 
-        for (int i = 0; i < tootedArray.length(); i++) {
-            JSONObject toode = tootedArray.getJSONObject(i);
-            tooted.add(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), toode.getDouble("hind"), toode.getInt("lao seis")));
+            for (int i = 0; i < tootedArray.length(); i++) {
+                JSONObject toode = tootedArray.getJSONObject(i);
+                tooted.add(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), toode.getDouble("hind"), toode.getInt("lao seis")));
+            }
+            return tooted;
+        } catch (NoSuchFileException e) {
+            Toode õun = new Toode(1, "õun", 0.39, 54);
+            Toode pirn = new Toode(2, "pirn", 0.59, 32);
+            List<Toode> tooted = new ArrayList<>();
+            tooted.add(õun);
+            tooted.add(pirn);
+            return tooted;
+
         }
 
-        return tooted;
+
     }
 
     public void addToode(Toode toode) throws IOException {
@@ -51,7 +64,9 @@ public class JsonReader {
     }
 
     private JSONObject getJSON() throws IOException {
-        String content = new String(Files.readAllBytes(Paths.get("andmebaas.json")));
+        String content;
+        content = new String(Files.readAllBytes(Paths.get("andmebaas.json")));
+
         return new JSONObject(content);
     }
 
