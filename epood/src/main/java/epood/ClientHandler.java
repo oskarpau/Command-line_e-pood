@@ -1,5 +1,8 @@
 package epood;
 
+import failisuhtlus.JsonReader;
+import failisuhtlus.Toode;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -13,6 +16,7 @@ import java.util.regex.Pattern;
 public class ClientHandler implements Runnable {
     private final Socket socket;
     private final Server server;
+    private final JsonReader dataReader = new JsonReader("andmebaas.json");
 
     public ClientHandler(Socket socket, Server server) {
         this.socket = socket;
@@ -68,9 +72,24 @@ public class ClientHandler implements Runnable {
         switch (cmd) {
             case "echo" -> echo(dout, args);
             case "help" -> help(dout);
+
+            // proov toodete searchist
+            case "show" -> search(dout, "products");
+
             default -> {
                 dout.writeInt(1);
                 dout.writeUTF("invalid command, for common commands type: help");
+            }
+        }
+    }
+
+    private void search(DataOutputStream dout, String search) throws IOException {
+        System.out.println("Seaching " + search);
+        List<Toode> tooted = dataReader.getTooted();
+        if (!tooted.isEmpty()) {
+            dout.writeInt(tooted.size());
+            for (Toode t : tooted) {
+                dout.writeUTF(t.getNimi());
             }
         }
     }
