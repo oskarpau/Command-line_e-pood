@@ -21,7 +21,6 @@ public class Server {
 
             try (ServerSocket ss = new ServerSocket(1337)) {
                 System.out.println("now listening on :1337");
-                // päriselt käiks siia while True, praegu panin siia arvu, et saaks näha serveri sulgumist
                 while (true) {
                     Socket clientsocket = ss.accept();
                     pool.execute(new ClientHandler(clientsocket, server));
