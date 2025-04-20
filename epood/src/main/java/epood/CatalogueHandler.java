@@ -63,7 +63,7 @@ public class CatalogueHandler implements Screen {
                 if (toode.getLao_seis() >= (quantity + quantityInCart)) {
                     if (quantity <= 0) {
                         dout.writeInt(1);
-                        dout.writeUTF("No product added to the cart.");
+                        dout.writeUTF("Please enter positive quantity.\nNo product added to the cart.");
                     } else {
                         cart.addToode(toode, quantity);
                         dout.writeInt(1);
@@ -74,6 +74,7 @@ public class CatalogueHandler implements Screen {
                 } else {
                     dout.writeInt(1);
                     dout.writeUTF("Please enter lower quantity: ");
+                    currentSubScreen = "select quantity";
                 }
             }
             catch (NumberFormatException e) {

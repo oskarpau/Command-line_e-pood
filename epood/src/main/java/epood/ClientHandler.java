@@ -102,7 +102,7 @@ public class ClientHandler implements Runnable {
         }
 
         //variant 2. saab viidata ka muude klasside meetoditele jne. lisage vaid case juurde viitadega meetoditele
-        // -> süntaksi kasutamine välimises switchis viskas erroreid
+        // '->' süntaksi kasutamine välimises switchis viskas erroreid
         System.out.println(currentScreen);
         switch (currentScreen) {
             case "main":
@@ -119,7 +119,7 @@ public class ClientHandler implements Runnable {
                         currentScreen = "search";
                     }
                     case "cart" -> {
-                        cartHandler.show(dout);
+                        cartHandler.show(dout, cart);
                         currentScreen = "cart";
                     }
                     case "order" -> {

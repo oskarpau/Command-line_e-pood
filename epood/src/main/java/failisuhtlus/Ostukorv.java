@@ -1,5 +1,6 @@
 package failisuhtlus;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 /**
@@ -49,10 +50,10 @@ public class Ostukorv {
      * Arvutab kogu ostukorvi hinna
      * @return tagastab double tüüpi kogusumma
      */
-    public double getKoguHind() {
-        double total = 0.0;
+    public BigDecimal getKoguHind() {
+        BigDecimal total = BigDecimal.valueOf(0.0);
         for (Map.Entry<Toode, Integer> entry : tooted.entrySet()) {
-            total += entry.getKey().getHind() * entry.getValue();
+            total = total.add(entry.getKey().getHind().multiply(BigDecimal.valueOf(entry.getValue())));
         }
         return total;
     }
@@ -67,7 +68,7 @@ public class Ostukorv {
             System.out.println("Ostukorvis olevad tooted:");
             for (Map.Entry<Toode, Integer> entry : tooted.entrySet()) {
                 System.out.println(entry.getKey().getNimi() + " x" + entry.getValue() +
-                        " = " + entry.getKey().getHind() * entry.getValue() + " EUR");
+                        " = " + entry.getKey().getHind().multiply(BigDecimal.valueOf(entry.getValue()))  + " EUR");
             }
             System.out.println("Kokku: " + getKoguHind() + " EUR");
         }
