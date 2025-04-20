@@ -1,12 +1,14 @@
 package failisuhtlus;
 
+import java.math.BigDecimal;
+
 public class Toode {
     private int number;
     private String nimi;
-    private double hind;
+    private BigDecimal hind; // BigDecimal, sest double andis kahe hinna liitmisel ümardamise erroreid
     private int lao_seis;
 
-    public Toode(int number, String nimi, double hind, int lao_seis) {
+    public Toode(int number, String nimi, BigDecimal hind, int lao_seis) {
         this.number = number;
         this.nimi = nimi;
         this.hind = hind;
@@ -21,7 +23,7 @@ public class Toode {
         return nimi;
     }
 
-    public double getHind() {
+    public BigDecimal getHind() {
         return hind;
     }
 

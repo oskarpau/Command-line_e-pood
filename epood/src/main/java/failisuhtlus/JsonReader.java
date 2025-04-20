@@ -5,6 +5,7 @@ import org.json.JSONObject;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
@@ -30,12 +31,12 @@ public class JsonReader {
 
             for (int i = 0; i < tootedArray.length(); i++) {
                 JSONObject toode = tootedArray.getJSONObject(i);
-                tooted.add(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), toode.getDouble("hind"), toode.getInt("lao seis")));
+                tooted.add(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), BigDecimal.valueOf(toode.getDouble("hind")), toode.getInt("lao seis")));
             }
             return tooted;
         } catch (NoSuchFileException e) {
-            Toode õun = new Toode(1, "õun", 0.39, 54);
-            Toode pirn = new Toode(2, "pirn", 0.59, 32);
+            Toode õun = new Toode(1, "õun", BigDecimal.valueOf(0.39), 54);
+            Toode pirn = new Toode(2, "pirn", BigDecimal.valueOf(0.59), 32);
             List<Toode> tooted = new ArrayList<>();
             tooted.add(õun);
             tooted.add(pirn);
