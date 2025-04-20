@@ -8,7 +8,7 @@ import java.util.*;
  * Iga toode on seotud kogusega
  */
 public class Ostukorv {
-    private Map<Toode, Integer> tooted;
+    private static Map<Toode, Integer> tooted;
 
     public Ostukorv() {
         this.tooted = new HashMap<>();
@@ -42,15 +42,15 @@ public class Ostukorv {
      * Tagastab kogu ostukorvi, mis hetkel seal on
      * @return tagastab ostukorvis olevate toodete nimede ja koguste mapi
      */
-    public Map<Toode, Integer> getItems() {
+    public static Map<Toode, Integer> getItems() {
         return tooted;
     }
 
     /**
      * Arvutab kogu ostukorvi hinna
-     * @return tagastab double tüüpi kogusumma
+     * @return tagastab BigDecimal tüüpi kogusumma
      */
-    public BigDecimal getKoguHind() {
+    public static BigDecimal getKoguHind() {
         BigDecimal total = BigDecimal.valueOf(0.0);
         for (Map.Entry<Toode, Integer> entry : tooted.entrySet()) {
             total = total.add(entry.getKey().getHind().multiply(BigDecimal.valueOf(entry.getValue())));
@@ -61,7 +61,7 @@ public class Ostukorv {
     /**
      * Prindib ostukorvi sisu ja info
      */
-    public void printOstukorv() {
+    public static void printOstukorv() {
         if (tooted.isEmpty()) {
             System.out.println("Ostukorv on tühi.");
         } else {
