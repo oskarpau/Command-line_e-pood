@@ -241,7 +241,7 @@ public class CartHandler implements Screen {
             for (Map.Entry<Toode, Integer> entry : items.entrySet()) {
                 Toode product = entry.getKey();
                 Integer quantity = entry.getValue();
-                double itemTotal = product.getHind() * quantity;
+                BigDecimal itemTotal = product.getHind().multiply(BigDecimal.valueOf(quantity));
 
                 sb.append(String.format("%s x%d = %.2f EUR\n",
                         product.getNimi(), quantity, itemTotal));

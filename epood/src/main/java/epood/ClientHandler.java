@@ -16,13 +16,15 @@ import java.util.regex.Pattern;
 public class ClientHandler implements Runnable {
     private final Socket socket;
     private final Server server;
-    private String currentScreen = "main";
+    private String currentScreen = "login";
 
     private CatalogueHandler catalogueHandler;
     private CartHandler cartHandler;
     private OrderHandler orderHandler;
     private SearchHandler searchHandler;
+    private LoginHandler loginHandler;
     private Ostukorv cart;
+    private ClientServerSide client;
 
     public ClientHandler(Socket socket, Server server) {
         this.socket = socket;
@@ -31,7 +33,9 @@ public class ClientHandler implements Runnable {
         cartHandler = new CartHandler();
         orderHandler = new OrderHandler();
         searchHandler = new SearchHandler();
+        loginHandler = new LoginHandler();
         cart = new Ostukorv();
+        client = null;
     }
 
     public void run() {
@@ -45,10 +49,9 @@ public class ClientHandler implements Runnable {
             //kommunikatsioon algab
             System.out.println("client connected; waiting for a command");
             dout.writeInt(1);
-            dout.writeUTF("Welcome to our high speed web shop!\n" +
-                    "Please choose one of the following:\n" +
-                    "catalogue; search; cart; order; exit\n" +
-                    "type: 'back' to go back to main menu");
+            dout.writeUTF("Tere tulemast meie e-poodi!\n" +
+                    "Vali, kes sa oled:\n" +
+                    "klient, töötaja");
 
             while (true) {
                 String[] cmdFull = extractArgs(din.readUTF());
@@ -96,7 +99,7 @@ public class ClientHandler implements Runnable {
 
             } else {
                 dout.writeInt(1);
-                dout.writeUTF("Already in main menu");
+                dout.writeUTF("Olete juba peamenüüs");
             }
             return;
         }
@@ -105,6 +108,8 @@ public class ClientHandler implements Runnable {
         // '->' süntaksi kasutamine välimises switchis viskas erroreid
         System.out.println(currentScreen);
         switch (currentScreen) {
+            case "login":
+                loginHandler.handler(dout, cmd, args, cart, client); break;
             case "main":
                 switch (cmd) {
                     case "echo" -> echo(dout, args);
@@ -119,7 +124,7 @@ public class ClientHandler implements Runnable {
                         currentScreen = "search";
                     }
                     case "cart" -> {
-                        cartHandler.show(dout, cart);
+                        cartHandler.show(dout);
                         currentScreen = "cart";
                     }
                     case "order" -> {
@@ -147,9 +152,9 @@ public class ClientHandler implements Runnable {
 
     private void showMain(DataOutputStream dout) throws IOException {
         dout.writeInt(1);
-        dout.writeUTF("Please choose one of the following:\n" +
+        dout.writeUTF("Palun valige üks alljärgnevatest:\n" +
                 "catalogue; search; cart; order; exit\n" +
-                "type: 'back' to go back to main menu");
+                "sisestage 'back', et naasta peamenüüsse");
     }
 
 

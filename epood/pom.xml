@@ -12,6 +12,8 @@
         <maven.compiler.source>23</maven.compiler.source>
         <maven.compiler.target>23</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <gson.version>2.13.0</gson.version>
     </properties>
 
     <dependencies>
@@ -19,6 +21,18 @@
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20250107</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-validator</groupId>
+            <artifactId>commons-validator</artifactId>
+            <version>1.9.0</version>
         </dependency>
     </dependencies>
 

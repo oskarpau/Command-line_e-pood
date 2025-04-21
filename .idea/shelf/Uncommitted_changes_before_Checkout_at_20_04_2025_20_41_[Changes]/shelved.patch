@@ -1,0 +1,336 @@
+Index: epood/src/main/java/epood/ClientHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package epood;\r\n\r\nimport failisuhtlus.Ostukorv;\r\n\r\nimport java.io.DataInputStream;\r\nimport java.io.DataOutputStream;\r\nimport java.io.IOException;\r\nimport java.net.Socket;\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\nimport java.util.Arrays;\r\nimport java.util.regex.Matcher;\r\nimport java.util.regex.Pattern;\r\n\r\n\r\npublic class ClientHandler implements Runnable {\r\n    private final Socket socket;\r\n    private final Server server;\r\n    private String currentScreen = \"main\";\r\n\r\n    private CatalogueHandler catalogueHandler;\r\n    private CartHandler cartHandler;\r\n    private OrderHandler orderHandler;\r\n    private SearchHandler searchHandler;\r\n    private Ostukorv cart;\r\n\r\n    public ClientHandler(Socket socket, Server server) {\r\n        this.socket = socket;\r\n        this.server = server;\r\n        catalogueHandler = new CatalogueHandler();\r\n        cartHandler = new CartHandler();\r\n        orderHandler = new OrderHandler();\r\n        searchHandler = new SearchHandler();\r\n        cart = new Ostukorv();\r\n    }\r\n\r\n    public void run() {\r\n        try (socket;\r\n             DataInputStream din = new DataInputStream(socket.getInputStream());\r\n             DataOutputStream dout = new DataOutputStream(socket.getOutputStream())) {\r\n\r\n            // initsialiseerime vajalikud handlerid\r\n            CatalogueHandler catalogueHandler = new CatalogueHandler();\r\n\r\n            //kommunikatsioon algab\r\n            System.out.println(\"client connected; waiting for a command\");\r\n            dout.writeInt(1);\r\n            dout.writeUTF(\"Welcome to our high speed web shop!\\n\" +\r\n                    \"Please choose one of the following:\\n\" +\r\n                    \"catalogue; search; cart; order; exit\\n\" +\r\n                    \"type: 'back' to go back to main menu\");\r\n\r\n            while (true) {\r\n                String[] cmdFull = extractArgs(din.readUTF());\r\n                String cmd = cmdFull[0];\r\n                String[] args = Arrays.copyOfRange(cmdFull, 1, cmdFull.length);\r\n                System.out.println(\"received cmd: \" + cmd);\r\n                System.out.println(\"args: \" + Arrays.toString(args));\r\n\r\n                //variant 1, ärge seda rohkem kasutage\r\n                if (cmd.equals(\"exit\")) { //exit ja ainult exit\r\n                    System.out.println(\"client disconnected\");\r\n                    break;\r\n                }\r\n\r\n                interpretCmd(cmd, args, din, dout);\r\n            }\r\n            //kommunikatsioon lõpeb\r\n            System.out.println(\"Closed connection with client\");\r\n        } catch (IOException e) {\r\n            throw new RuntimeException(e);\r\n        }\r\n    }\r\n\r\n    private static String[] extractArgs(String cmd) {\r\n        List<String> parts = new ArrayList<>();\r\n        Pattern pattern = Pattern.compile(\"\\\"([^\\\"]*)\\\"|\\\\S+\"); // Match quoted text OR words\r\n        Matcher matcher = pattern.matcher(cmd);\r\n        while (matcher.find()) {\r\n            if (matcher.group(1) != null) {\r\n                parts.add(matcher.group(1)); // Extract text inside quotes (group 1)\r\n            } else {\r\n                parts.add(matcher.group()); // Extract normal words\r\n            }\r\n        }\r\n        return parts.toArray(new String[0]);\r\n    }\r\n\r\n    private void interpretCmd(String cmd, String[] args, DataInputStream din, DataOutputStream dout) throws IOException {\r\n        if (cmd.equalsIgnoreCase(\"back\")) {\r\n            if (!currentScreen.equals(\"main\")) {\r\n                showMain(dout);\r\n                currentScreen = \"main\";\r\n                System.out.println(\"here\");\r\n                System.out.println(currentScreen);\r\n\r\n            } else {\r\n                dout.writeInt(1);\r\n                dout.writeUTF(\"Already in main menu\");\r\n            }\r\n            return;\r\n        }\r\n\r\n        //variant 2. saab viidata ka muude klasside meetoditele jne. lisage vaid case juurde viitadega meetoditele\r\n        // -> süntaksi kasutamine välimises switchis viskas erroreid\r\n        System.out.println(currentScreen);\r\n        switch (currentScreen) {\r\n            case \"main\":\r\n                switch (cmd) {\r\n                    case \"echo\" -> echo(dout, args);\r\n                    case \"help\" -> help(dout);\r\n                    case \"catalogue\" -> {\r\n                        catalogueHandler.show(dout);\r\n                        currentScreen = \"catalogue\";\r\n                    }\r\n                    case \"search\" -> {\r\n                        // proov toodete searchist\r\n                        searchHandler.show(dout, \"products\");\r\n                        currentScreen = \"search\";\r\n                    }\r\n                    case \"cart\" -> {\r\n                        cartHandler.show(dout);\r\n                        currentScreen = \"cart\";\r\n                    }\r\n                    case \"order\" -> {\r\n                        orderHandler.show(dout);\r\n                        currentScreen = \"order\";\r\n                    }\r\n                    default -> {\r\n                        dout.writeInt(1);\r\n                        dout.writeUTF(\"invalid command, for common commands type: help\");\r\n                    }\r\n                }\r\n                break;\r\n\r\n            case \"catalogue\": catalogueHandler.handler(dout, cmd, args, cart); break;\r\n            case \"search\": searchHandler.handler(dout, cmd, args, cart); break;\r\n            case \"cart\": cartHandler.handler(dout, cmd, args, cart); break;\r\n            case \"order\": orderHandler.handler(dout, cmd, args, cart); break;\r\n            default: {\r\n                System.out.println(\"undefined category, smth broken\");\r\n            }\r\n        }\r\n\r\n\r\n    }\r\n\r\n    private void showMain(DataOutputStream dout) throws IOException {\r\n        dout.writeInt(1);\r\n        dout.writeUTF(\"Please choose one of the following:\\n\" +\r\n                \"catalogue; search; cart; order; exit\\n\" +\r\n                \"type: 'back' to go back to main menu\");\r\n    }\r\n\r\n\r\n\r\n    private void help(DataOutputStream dout) throws IOException {\r\n        System.out.println(\"helping\");\r\n        String[] cmdList = {\"exit\", \"help\", \"back\", \"catalogue\", \"search\", \"cart\", \"order\"};\r\n        dout.writeInt(cmdList.length);\r\n        for (String cmd : cmdList) {\r\n            dout.writeUTF(cmd);\r\n        }\r\n    }\r\n\r\n    private static void echo(DataOutputStream dout, String[] args) throws IOException {\r\n        System.out.println(\"echoing\");\r\n        if (args.length == 1 && !args[0].startsWith(\"-\")) {\r\n            dout.writeInt(1);\r\n            dout.writeUTF(args[0]);\r\n        }\r\n//        for (int i = 0; i < messageLength; i++) {\r\n//            msg += din.readUTF() + \" \";\r\n//        }\r\n//        System.out.println(\"received message: \" + msg);\r\n//        dout.writeInt(1);\r\n//        dout.writeUTF(msg);\r\n    }\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/epood/ClientHandler.java b/epood/src/main/java/epood/ClientHandler.java
+--- a/epood/src/main/java/epood/ClientHandler.java	(revision 3f1cc81a982860144a89dec1a3b3f487a8e13f30)
++++ b/epood/src/main/java/epood/ClientHandler.java	(date 1745152622262)
+@@ -102,7 +102,7 @@
+         }
+ 
+         //variant 2. saab viidata ka muude klasside meetoditele jne. lisage vaid case juurde viitadega meetoditele
+-        // -> süntaksi kasutamine välimises switchis viskas erroreid
++        // '->' süntaksi kasutamine välimises switchis viskas erroreid
+         System.out.println(currentScreen);
+         switch (currentScreen) {
+             case "main":
+@@ -119,7 +119,7 @@
+                         currentScreen = "search";
+                     }
+                     case "cart" -> {
+-                        cartHandler.show(dout);
++                        cartHandler.show(dout, cart);
+                         currentScreen = "cart";
+                     }
+                     case "order" -> {
+Index: epood/src/main/java/epood/CartHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package epood;\r\n\r\nimport failisuhtlus.Ostukorv;\r\n\r\nimport java.io.DataOutputStream;\r\nimport java.io.IOException;\r\n\r\npublic class CartHandler implements Screen{\r\n\r\n\r\n    public void show(DataOutputStream dout) throws IOException {\r\n        // todo\r\n    }\r\n    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart) throws IOException{\r\n        // todo\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/epood/CartHandler.java b/epood/src/main/java/epood/CartHandler.java
+--- a/epood/src/main/java/epood/CartHandler.java	(revision 3f1cc81a982860144a89dec1a3b3f487a8e13f30)
++++ b/epood/src/main/java/epood/CartHandler.java	(date 1745161196657)
+@@ -1,17 +1,134 @@
+ package epood;
+ 
+ import failisuhtlus.Ostukorv;
++import failisuhtlus.Toode;
+ 
+ import java.io.DataOutputStream;
+ import java.io.IOException;
++import java.math.BigDecimal;
++import java.util.Map;
++import java.util.regex.Pattern;
+ 
+ public class CartHandler implements Screen{
++    private String currentSubScreen;
++    private String name;
++    private String email;
++    private Toode toodeKogusMuudetud;
+ 
++    public CartHandler() {
++        this.name = "";
++        this.email = "";
++        this.toodeKogusMuudetud = null;
++    }
+ 
+-    public void show(DataOutputStream dout) throws IOException {
+-        // todo
++    // kasutajale kuvatakse valikud
++    // order; change quantity; remove product; back
++    public void show(DataOutputStream dout, Ostukorv cart) throws IOException {
++        currentSubScreen = "select action";
++        // näitame ostukorvis olevaid tooteid
++        showCart(dout, cart);
++
+     }
+     public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart) throws IOException{
++        if (cmd.equals("order") && currentSubScreen.equals("select action")) {
++            // hetkel küsime nime ja emaili, hiljem võime asju lisada
++            dout.writeInt(1);
++            dout.writeUTF("Enter your name:");
++            currentSubScreen = "enter email";
++        } else if (currentSubScreen.equals("enter email")) {
++            name = cmd;
++            dout.writeInt(1);
++            dout.writeUTF("Enter your email:");
++            // vaatame, kas sobib
++            currentSubScreen = "validating email";
++        } else if (currentSubScreen.equals("validating email")) {
++            if (isValid(cmd)) {
++                email = cmd;
++                finishOrder(dout, cart, name, email);
++            } else {
++                dout.writeInt(1);
++                dout.writeUTF("Invalid email");
++                currentSubScreen = "enter email";
++            }
++        }
++
++        else if (cmd.equals("change quantity")) {
++            dout.writeInt(1);
++            dout.writeUTF("Enter the name of the product:");
++            currentSubScreen = "quantity - enter name";
++        } else if (currentSubScreen.equals("quantity - enter name")) {
++            toodeKogusMuudetud = null;
++            Toode toodeKogusMuudetud = cart.getItems().keySet().stream()
++                    .filter(toode -> toode.getNimi().equals(cmd))
++                    .findFirst()
++                    .orElse(null);
++            if (toodeKogusMuudetud != null) {
++                dout.writeInt(1);
++                dout.writeUTF("Enter quantity");
++                currentSubScreen = "quantity - enter quantity";
++            } else {
++                dout.writeInt(1);
++                dout.writeUTF("This product is not in the cart\nEnter valid name of the product:");
++                currentSubScreen = "quantity - enter name";
++            }
++        } else if (currentSubScreen.equals("quantity - enter quantity")) {
++            if (cmd != null && cmd.matches("-?\\d+")) {
++                cart.addToode(toodeKogusMuudetud, Integer.parseInt(cmd));
++                currentSubScreen = "select action";
++                showCart(dout, cart);
++            } else {
++                dout.writeInt(1);
++                dout.writeUTF("Enter valid quantity");
++                currentSubScreen = "quantity - enter quantity";
++            }
++        }
++
++
++        else if (cmd.equals("remove product")) {
++
++        }
++    }
++
++    private void showCart(DataOutputStream dout, Ostukorv cart) throws IOException {
++        Map<Toode, Integer> tooted = cart.getItems();
++        String outStr = "";
++        if (tooted.isEmpty()) {
++            outStr = outStr.concat("Shopping cart is empty.Please add items and come back.\nType 'back' to return to the main menu.");
++        } else {
++            outStr = outStr.concat("Products in cart:\n");
++            for (Map.Entry<Toode, Integer> entry : tooted.entrySet()) {
++                outStr = outStr.concat(entry.getKey().getNimi() + " x" + entry.getValue() +
++                        " = " + entry.getKey().getHind().multiply(BigDecimal.valueOf(entry.getValue())) + " EUR\n");
++            }
++            outStr = outStr.concat("Sum: " + cart.getKoguHind() + " EUR\n");
++            outStr = outStr.concat("Choose one of the following actions:\norder; change quantity; remove product; back");
++        }
++        dout.writeInt(1);
++        dout.writeUTF(outStr);
++    }
++
++    // https://www.geeksforgeeks.org/check-email-address-valid-not-java/
++    // Method to check if the email is valid
++    public boolean isValid(String email) {
++
++        // Regular expression to match valid email formats
++        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@" +
++                "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
++
++        // Compile the regex
++        Pattern p = Pattern.compile(emailRegex);
++
++        // Check if email matches the pattern
++        return email != null && p.matcher(email).matches();
++    }
++
++    private void finishOrder(DataOutputStream dout, Ostukorv cart, String name, String email) throws IOException {
+         // todo
++        // send email
++        // change quantity of products in json file
++        //cart.getItems().forEach((k, v) -> {cart.removeToode(k);});
++        cart.tyhjendaOstukorv();
++        dout.writeInt(1);
++        dout.writeUTF("Order successful for " + name + "\nConfirmation sent to: " + email + "\nType 'back' to return to the main menu\n(CHECK TODO IN 'CartHandler'!!)");
+     }
+ }
+Index: epood/src/main/java/epood/CatalogueHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package epood;\r\n\r\nimport failisuhtlus.Ostukorv;\r\nimport failisuhtlus.Toode;\r\nimport failisuhtlus.JsonReader;\r\n\r\nimport java.io.DataOutputStream;\r\nimport java.io.IOException;\r\nimport java.util.Map;\r\n\r\npublic class CatalogueHandler implements Screen {\r\n    private String currentSubScreen;\r\n    private Toode toode;\r\n\r\n    // peaks olema tegelikult kõikide klientide peale ainult 1 reader, aga panin hetkel siia, et debugida\r\n    private final JsonReader jsonReader = new JsonReader(\"andmebaas.json\");\r\n\r\n    public CatalogueHandler() {\r\n    }\r\n\r\n    public void show(DataOutputStream dout) throws IOException {\r\n        // näitame kõiki tooteid\r\n        currentSubScreen = \"select product\";\r\n        StringBuilder tooted = new StringBuilder();\r\n        jsonReader.getTooted().forEach(t -> tooted.append(t.toString()).append(\"\\n\"));\r\n        dout.writeInt(1);\r\n        dout.writeUTF(\"Products: \\n\" +\r\n                tooted + \"\\n\" +\r\n                \"Enter name of the product: \");\r\n    }\r\n\r\n    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart) throws IOException {\r\n        if (currentSubScreen.equals(\"select product\")) {\r\n            if (jsonReader.getTooted().stream()\r\n                .anyMatch(t -> cmd.equalsIgnoreCase(t.getNimi()))) {\r\n                toode = jsonReader.getTooted().stream()\r\n                        .filter(t -> cmd.equalsIgnoreCase(t.getNimi()))\r\n                        .findFirst()\r\n                        .orElse(null);\r\n\r\n                // Küsime mitu tükki soovib kasutaja antud toodet osta\r\n                dout.writeInt(1);\r\n                dout.writeUTF(\"Enter quantity: \");\r\n                currentSubScreen = \"select quantity\";\r\n        } else {\r\n                dout.writeInt(1);\r\n                dout.writeUTF(\"Invalid name:\");\r\n        }\r\n        } else if (currentSubScreen.equals(\"select quantity\")) {\r\n            // vaatame, kas on meil piisavalt\r\n            try {\r\n                int quantity = Integer.parseInt(cmd);\r\n                // vaatame, kui palju meil antud toodet juba ostukorvis on\r\n                Toode inCart = null;\r\n                Integer quantityInCart = 0;\r\n                for (Map.Entry<Toode, Integer> entry : cart.getItems().entrySet()) {\r\n                    String name = entry.getKey().getNimi();\r\n                    if (name.equals(toode.getNimi())) {\r\n                        quantityInCart = entry.getValue();\r\n                    }\r\n                }\r\n\r\n                if (toode.getLao_seis() >= (quantity + quantityInCart)) {\r\n                    if (quantity <= 0) {\r\n                        dout.writeInt(1);\r\n                        dout.writeUTF(\"No product added to the cart.\");\r\n                    } else {\r\n                        cart.addToode(toode, quantity);\r\n                        dout.writeInt(1);\r\n                        dout.writeUTF(\"Product added to the cart. \\n\" +\r\n                                \"Enter name of the product: \");\r\n                    }\r\n                    currentSubScreen = \"select product\";\r\n                } else {\r\n                    dout.writeInt(1);\r\n                    dout.writeUTF(\"Please enter lower quantity: \");\r\n                }\r\n            }\r\n            catch (NumberFormatException e) {\r\n                dout.writeInt(1);\r\n                dout.writeUTF(\"Invalid quantity. Please enter a valid number.\");\r\n            }\r\n        }\r\n    }\r\n\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/epood/CatalogueHandler.java b/epood/src/main/java/epood/CatalogueHandler.java
+--- a/epood/src/main/java/epood/CatalogueHandler.java	(revision 3f1cc81a982860144a89dec1a3b3f487a8e13f30)
++++ b/epood/src/main/java/epood/CatalogueHandler.java	(date 1745151121645)
+@@ -63,7 +63,7 @@
+                 if (toode.getLao_seis() >= (quantity + quantityInCart)) {
+                     if (quantity <= 0) {
+                         dout.writeInt(1);
+-                        dout.writeUTF("No product added to the cart.");
++                        dout.writeUTF("Please enter positive quantity.\nNo product added to the cart.");
+                     } else {
+                         cart.addToode(toode, quantity);
+                         dout.writeInt(1);
+@@ -74,6 +74,7 @@
+                 } else {
+                     dout.writeInt(1);
+                     dout.writeUTF("Please enter lower quantity: ");
++                    currentSubScreen = "select quantity";
+                 }
+             }
+             catch (NumberFormatException e) {
+Index: epood/src/main/java/failisuhtlus/JsonReader.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package failisuhtlus;\r\n\r\nimport org.json.JSONArray;\r\nimport org.json.JSONObject;\r\n\r\nimport java.io.FileWriter;\r\nimport java.io.IOException;\r\nimport java.nio.file.Files;\r\nimport java.nio.file.NoSuchFileException;\r\nimport java.nio.file.Paths;\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\n\r\npublic class JsonReader {\r\n    private String fail;\r\n\r\n    public JsonReader(String fail) {\r\n        this.fail = fail;\r\n    }\r\n\r\n\r\n    public List<Toode> getTooted() throws IOException {\r\n\r\n        try {\r\n            List<Toode> tooted = new ArrayList<>();\r\n\r\n            JSONObject json = getJSON();\r\n\r\n            JSONArray tootedArray = json.getJSONArray(\"tooted\");\r\n\r\n            for (int i = 0; i < tootedArray.length(); i++) {\r\n                JSONObject toode = tootedArray.getJSONObject(i);\r\n                tooted.add(new Toode(toode.getInt(\"tootenumber\"), toode.getString(\"nimi\"), toode.getDouble(\"hind\"), toode.getInt(\"lao seis\")));\r\n            }\r\n            return tooted;\r\n        } catch (NoSuchFileException e) {\r\n            Toode õun = new Toode(1, \"õun\", 0.39, 54);\r\n            Toode pirn = new Toode(2, \"pirn\", 0.59, 32);\r\n            List<Toode> tooted = new ArrayList<>();\r\n            tooted.add(õun);\r\n            tooted.add(pirn);\r\n            return tooted;\r\n\r\n        }\r\n\r\n\r\n    }\r\n\r\n    public void addToode(Toode toode) throws IOException {\r\n\r\n        JSONObject json = getJSON();\r\n\r\n        JSONArray tootedArray = json.getJSONArray(\"tooted\");\r\n\r\n        JSONObject toodeJson = new JSONObject();\r\n        toodeJson.put(\"tootenumber\", toode.getNumber());\r\n        toodeJson.put(\"nimi\", toode.getNimi());\r\n        toodeJson.put(\"hind\", toode.getHind());\r\n        toodeJson.put(\"lao seis\", toode.getLao_seis());\r\n\r\n        tootedArray.put(toodeJson);\r\n\r\n        updateJson(json);\r\n    }\r\n\r\n    private JSONObject getJSON() throws IOException {\r\n        String content;\r\n        content = new String(Files.readAllBytes(Paths.get(\"andmebaas.json\")));\r\n\r\n        return new JSONObject(content);\r\n    }\r\n\r\n    private void updateJson(JSONObject json) throws IOException {\r\n        try (FileWriter fileWriter = new FileWriter(fail)) {\r\n            fileWriter.write(json.toString());\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/failisuhtlus/JsonReader.java b/epood/src/main/java/failisuhtlus/JsonReader.java
+--- a/epood/src/main/java/failisuhtlus/JsonReader.java	(revision 3f1cc81a982860144a89dec1a3b3f487a8e13f30)
++++ b/epood/src/main/java/failisuhtlus/JsonReader.java	(date 1745154424297)
+@@ -5,6 +5,7 @@
+ 
+ import java.io.FileWriter;
+ import java.io.IOException;
++import java.math.BigDecimal;
+ import java.nio.file.Files;
+ import java.nio.file.NoSuchFileException;
+ import java.nio.file.Paths;
+@@ -30,12 +31,12 @@
+ 
+             for (int i = 0; i < tootedArray.length(); i++) {
+                 JSONObject toode = tootedArray.getJSONObject(i);
+-                tooted.add(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), toode.getDouble("hind"), toode.getInt("lao seis")));
++                tooted.add(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), BigDecimal.valueOf(toode.getDouble("hind")), toode.getInt("lao seis")));
+             }
+             return tooted;
+         } catch (NoSuchFileException e) {
+-            Toode õun = new Toode(1, "õun", 0.39, 54);
+-            Toode pirn = new Toode(2, "pirn", 0.59, 32);
++            Toode õun = new Toode(1, "õun", BigDecimal.valueOf(0.39), 54);
++            Toode pirn = new Toode(2, "pirn", BigDecimal.valueOf(0.59), 32);
+             List<Toode> tooted = new ArrayList<>();
+             tooted.add(õun);
+             tooted.add(pirn);
+Index: epood/src/main/java/failisuhtlus/Toode.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package failisuhtlus;\r\n\r\npublic class Toode {\r\n    private int number;\r\n    private String nimi;\r\n    private double hind;\r\n    private int lao_seis;\r\n\r\n    public Toode(int number, String nimi, double hind, int lao_seis) {\r\n        this.number = number;\r\n        this.nimi = nimi;\r\n        this.hind = hind;\r\n        this.lao_seis = lao_seis;\r\n    }\r\n\r\n    public int getNumber() {\r\n        return number;\r\n    }\r\n\r\n    public String getNimi() {\r\n        return nimi;\r\n    }\r\n\r\n    public double getHind() {\r\n        return hind;\r\n    }\r\n\r\n    public int getLao_seis() {\r\n        return lao_seis;\r\n    }\r\n\r\n    @Override\r\n    public String toString() {\r\n        return \"Toode{\" +\r\n                \"number=\" + number +\r\n                \", nimi='\" + nimi + '\\'' +\r\n                \", hind=\" + hind +\r\n                \", lao_seis=\" + lao_seis +\r\n                '}';\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/failisuhtlus/Toode.java b/epood/src/main/java/failisuhtlus/Toode.java
+--- a/epood/src/main/java/failisuhtlus/Toode.java	(revision 3f1cc81a982860144a89dec1a3b3f487a8e13f30)
++++ b/epood/src/main/java/failisuhtlus/Toode.java	(date 1745154716499)
+@@ -1,12 +1,14 @@
+ package failisuhtlus;
+ 
++import java.math.BigDecimal;
++
+ public class Toode {
+     private int number;
+     private String nimi;
+-    private double hind;
++    private BigDecimal hind; // BigDecimal, sest double andis kahe hinna liitmisel ümardamise erroreid
+     private int lao_seis;
+ 
+-    public Toode(int number, String nimi, double hind, int lao_seis) {
++    public Toode(int number, String nimi, BigDecimal hind, int lao_seis) {
+         this.number = number;
+         this.nimi = nimi;
+         this.hind = hind;
+@@ -21,7 +23,7 @@
+         return nimi;
+     }
+ 
+-    public double getHind() {
++    public BigDecimal getHind() {
+         return hind;
+     }
+ 
+Index: epood/src/main/java/failisuhtlus/Ostukorv.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package failisuhtlus;\r\n\r\nimport java.util.*;\r\n\r\n/**\r\n * Ostukorv klass võimaldab toodete ajutist hoidmist enne tellimuse esitamist\r\n * Iga toode on seotud kogusega\r\n */\r\npublic class Ostukorv {\r\n    private Map<Toode, Integer> tooted;\r\n\r\n    public Ostukorv() {\r\n        this.tooted = new HashMap<>();\r\n    }\r\n\r\n    /**\r\n     * Lisab toote ostukorvi või kui on juba olemas, siis suurendab kogust\r\n     * @param toode lisatav toode\r\n     * @param kogus lisatava toote kogus\r\n     */\r\n    public void addToode(Toode toode, int kogus) {\r\n        tooted.put(toode, tooted.getOrDefault(toode, 0) + kogus);\r\n    }\r\n\r\n    /**\r\n     * Eemaldab konkreetse toote\r\n     * @param toode eemaldatav toode\r\n     */\r\n    public void removeToode(Toode toode) {\r\n        tooted.remove(toode);\r\n    }\r\n\r\n    /**\r\n     * tühjendab kogu ostukorvi\r\n     */\r\n    public void tyhjendaOstukorv() {\r\n        tooted.clear();\r\n    }\r\n\r\n    /**\r\n     * Tagastab kogu ostukorvi, mis hetkel seal on\r\n     * @return tagastab ostukorvis olevate toodete nimede ja koguste mapi\r\n     */\r\n    public Map<Toode, Integer> getItems() {\r\n        return tooted;\r\n    }\r\n\r\n    /**\r\n     * Arvutab kogu ostukorvi hinna\r\n     * @return tagastab double tüüpi kogusumma\r\n     */\r\n    public double getKoguHind() {\r\n        double total = 0.0;\r\n        for (Map.Entry<Toode, Integer> entry : tooted.entrySet()) {\r\n            total += entry.getKey().getHind() * entry.getValue();\r\n        }\r\n        return total;\r\n    }\r\n\r\n    /**\r\n     * Prindib ostukorvi sisu ja info\r\n     */\r\n    public void printOstukorv() {\r\n        if (tooted.isEmpty()) {\r\n            System.out.println(\"Ostukorv on tühi.\");\r\n        } else {\r\n            System.out.println(\"Ostukorvis olevad tooted:\");\r\n            for (Map.Entry<Toode, Integer> entry : tooted.entrySet()) {\r\n                System.out.println(entry.getKey().getNimi() + \" x\" + entry.getValue() +\r\n                        \" = \" + entry.getKey().getHind() * entry.getValue() + \" EUR\");\r\n            }\r\n            System.out.println(\"Kokku: \" + getKoguHind() + \" EUR\");\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/failisuhtlus/Ostukorv.java b/epood/src/main/java/failisuhtlus/Ostukorv.java
+--- a/epood/src/main/java/failisuhtlus/Ostukorv.java	(revision 3f1cc81a982860144a89dec1a3b3f487a8e13f30)
++++ b/epood/src/main/java/failisuhtlus/Ostukorv.java	(date 1745159863323)
+@@ -1,5 +1,6 @@
+ package failisuhtlus;
+ 
++import java.math.BigDecimal;
+ import java.util.*;
+ 
+ /**
+@@ -49,10 +50,10 @@
+      * Arvutab kogu ostukorvi hinna
+      * @return tagastab double tüüpi kogusumma
+      */
+-    public double getKoguHind() {
+-        double total = 0.0;
++    public BigDecimal getKoguHind() {
++        BigDecimal total = BigDecimal.valueOf(0.0);
+         for (Map.Entry<Toode, Integer> entry : tooted.entrySet()) {
+-            total += entry.getKey().getHind() * entry.getValue();
++            total = total.add(entry.getKey().getHind().multiply(BigDecimal.valueOf(entry.getValue())));
+         }
+         return total;
+     }
+@@ -67,7 +68,7 @@
+             System.out.println("Ostukorvis olevad tooted:");
+             for (Map.Entry<Toode, Integer> entry : tooted.entrySet()) {
+                 System.out.println(entry.getKey().getNimi() + " x" + entry.getValue() +
+-                        " = " + entry.getKey().getHind() * entry.getValue() + " EUR");
++                        " = " + entry.getKey().getHind().multiply(BigDecimal.valueOf(entry.getValue()))  + " EUR");
+             }
+             System.out.println("Kokku: " + getKoguHind() + " EUR");
+         }
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"ExternalStorageConfigurationManager\" enabled=\"true\" />\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision 3f1cc81a982860144a89dec1a3b3f487a8e13f30)
++++ b/.idea/misc.xml	(date 1743957096460)
+@@ -1,4 +1,12 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="ExternalStorageConfigurationManager" enabled="true" />
++  <component name="MavenProjectsManager">
++    <option name="originalFiles">
++      <list>
++        <option value="$PROJECT_DIR$/epood/pom.xml" />
++      </list>
++    </option>
++  </component>
++  <component name="ProjectRootManager" version="2" project-jdk-name="23" project-jdk-type="JavaSDK" />
+ </project>
+\ No newline at end of file
