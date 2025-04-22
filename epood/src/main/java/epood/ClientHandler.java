@@ -23,8 +23,13 @@ public class ClientHandler implements Runnable {
     private OrderHandler orderHandler;
     private SearchHandler searchHandler;
     private LoginHandler loginHandler;
+    private HistoryEmployeeHandler historyEmployeeHandler;
+    private HistoryClientHandler historyClientHandler;
+    private InventoryHandler inventoryHandler;
     private Ostukorv cart;
-    private ClientServerSide client;
+    static final byte CLIENT = 1;
+    static final byte EMPLOYEE = 2;
+    private Context context;
 
     public ClientHandler(Socket socket, Server server) {
         this.socket = socket;
@@ -34,8 +39,11 @@ public class ClientHandler implements Runnable {
         orderHandler = new OrderHandler();
         searchHandler = new SearchHandler();
         loginHandler = new LoginHandler();
+        historyClientHandler = new HistoryClientHandler();
+        historyEmployeeHandler = new HistoryEmployeeHandler();
+        inventoryHandler = new InventoryHandler();
         cart = new Ostukorv();
-        client = null;
+        context = new Context();
     }
 
     public void run() {
@@ -49,9 +57,7 @@ public class ClientHandler implements Runnable {
             //kommunikatsioon algab
             System.out.println("client connected; waiting for a command");
             dout.writeInt(1);
-            dout.writeUTF("Tere tulemast meie e-poodi!\n" +
-                    "Vali, kes sa oled:\n" +
-                    "klient, töötaja");
+            dout.writeUTF("Tere tulemast meie e-poodi!\nVali, kes sa oled:\nklient, töötaja");
 
             while (true) {
                 String[] cmdFull = extractArgs(din.readUTF());
@@ -109,7 +115,7 @@ public class ClientHandler implements Runnable {
         System.out.println(currentScreen);
         switch (currentScreen) {
             case "login":
-                loginHandler.handler(dout, cmd, args, cart, client); break;
+                loginHandler.handler(dout, cmd, args, cart, context); break;
             case "main":
                 switch (cmd) {
                     case "echo" -> echo(dout, args);
@@ -131,6 +137,24 @@ public class ClientHandler implements Runnable {
                         orderHandler.show(dout);
                         currentScreen = "order";
                     }
+                    case "inventory" -> {
+                        if (context.type == EMPLOYEE) {
+                            InventoryHandler.show(dout);
+                            currentScreen = "inventory";
+                        } else if (context.type == CLIENT) {
+                            dout.writeInt(1);
+                            dout.writeUTF("invalid command, for common commands type: help");
+                        }
+                    }
+                    case "history" -> {
+                        if (context.type == EMPLOYEE) {
+                            historyEmployeeHandler.show(dout);
+                            currentScreen = "history_employee";
+                        } else if (context.type == CLIENT) {
+                            historyClientHandler.show(dout);
+                            currentScreen = "history_client";
+                        }
+                    }
                     default -> {
                         dout.writeInt(1);
                         dout.writeUTF("invalid command, for common commands type: help");
@@ -142,6 +166,9 @@ public class ClientHandler implements Runnable {
             case "search": searchHandler.handler(dout, cmd, args, cart); break;
             case "cart": cartHandler.handler(dout, cmd, args, cart); break;
             case "order": orderHandler.handler(dout, cmd, args, cart); break;
+            case "inventory": InventoryHandler.handler(dout, cmd, args);break;
+            case "history_employee": historyEmployeeHandler.handler(dout, cmd, args);break;
+            case "history_client": historyClientHandler.handler(dout, cmd, args);break;
             default: {
                 System.out.println("undefined category, smth broken");
             }
@@ -151,10 +178,13 @@ public class ClientHandler implements Runnable {
     }
 
     private void showMain(DataOutputStream dout) throws IOException {
-        dout.writeInt(1);
-        dout.writeUTF("Palun valige üks alljärgnevatest:\n" +
-                "catalogue; search; cart; order; exit\n" +
-                "sisestage 'back', et naasta peamenüüsse");
+        if (context.type == CLIENT) {
+            dout.writeInt(1);
+            dout.writeUTF("Palun valige üks alljärgnevatest:\ncatalogue; search; cart; order; history; exit\nsisestage 'back', et naasta peamenüüsse");
+        } else if (context.type == EMPLOYEE) {
+            dout.writeInt(1);
+            dout.writeUTF("Palun valige üks alljärgnevatest:\ncatalogue; search; cart; order; inventory; history; exit\nsisestage 'back', et naasta peamenüüsse");
+        }
     }
 
 
