@@ -11,15 +11,24 @@
   [
     {
       "nimi":"õun",
+      "kategooria": "puuvili",
       "tootenumber":1,
       "hind":0.39,
       "lao seis":54
     },
     {
       "nimi":"pirn",
+      "kategooria":"puuvili",
       "tootenumber":2,
       "hind":0.59,
       "lao seis":32
+    },
+    {
+      "nimi":"monster",
+      "kategooria":"energiajook",
+      "tootenumber":2,
+      "hind": 1.19,
+      "lao seis":12
     }
   ]
 }

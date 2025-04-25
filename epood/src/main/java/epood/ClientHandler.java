@@ -121,7 +121,7 @@ public class ClientHandler implements Runnable {
                     case "echo" -> echo(dout, args);
                     case "help" -> help(dout);
                     case "catalogue" -> {
-                        catalogueHandler.show(dout);
+                        catalogueHandler.show_categories(dout);
                         currentScreen = "catalogue";
                     }
                     case "search" -> {

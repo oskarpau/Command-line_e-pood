@@ -6,16 +6,31 @@ import failisuhtlus.JsonReader;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
 
 public class CatalogueHandler implements Screen {
     private String currentSubScreen;
     private Toode toode;
+    private String kategooria;
 
     // peaks olema tegelikult kõikide klientide peale ainult 1 reader, aga panin hetkel siia, et debugida
     private final JsonReader jsonReader = new JsonReader("andmebaas.json");
 
     public CatalogueHandler() {
+    }
+
+    public void show_categories(DataOutputStream dout) throws IOException {
+        // näitame kõiki kategooriaid
+        currentSubScreen = "select category";
+        StringBuilder categories = new StringBuilder();
+        HashSet categoriesSet = new HashSet();
+        jsonReader.getTooted().forEach(t -> categoriesSet.add(t.getKategooria()));
+        categoriesSet.forEach(c -> categories.append(c).append("\n"));
+        dout.writeInt(1);
+        dout.writeUTF("Categories: \n" +
+                categories + "\n" +
+                "Enter name of the category: ");
     }
 
     public void show(DataOutputStream dout) throws IOException {
@@ -29,25 +44,55 @@ public class CatalogueHandler implements Screen {
                 "Enter name of the product: ");
     }
 
-    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart) throws IOException {
-        if (currentSubScreen.equals("select product")) {
-            if (jsonReader.getTooted().stream()
-                .anyMatch(t -> cmd.equalsIgnoreCase(t.getNimi()))) {
-                toode = jsonReader.getTooted().stream()
-                        .filter(t -> cmd.equalsIgnoreCase(t.getNimi()))
-                        .findFirst()
-                        .orElse(null);
+    public void show(DataOutputStream dout, String kategooria) throws IOException {
+        // näitame kõiki tooteid
+        currentSubScreen = "select product";
+        StringBuilder tooted = new StringBuilder();
+        jsonReader.getTooted().forEach(t -> {
+            if (t.getKategooria().equals(kategooria)) {
+                tooted.append(t.toString()).append("\n");
+            }
+        });
+        dout.writeInt(1);
+        dout.writeUTF("Products: \n" +
+                tooted + "\n" +
+                "Enter name of the product: ");
+    }
 
+    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart) throws IOException {
+        if (currentSubScreen.equals("select category")) {
+            if (jsonReader.getTooted().stream()
+                    .anyMatch(t -> cmd.equalsIgnoreCase(t.getKategooria()))) {
+                kategooria = cmd;
+                show(dout, kategooria);
+                /*
                 // Küsime mitu tükki soovib kasutaja antud toodet osta
                 dout.writeInt(1);
-                dout.writeUTF("Enter quantity: ");
-                currentSubScreen = "select quantity";
-        } else {
+                dout.writeUTF("Enter name of the product: ");
+                currentSubScreen = "select product";
+                 */
+            }  else {
                 dout.writeInt(1);
                 dout.writeUTF("Invalid name:");
-        }
+            }
+        } else if (currentSubScreen.equals("select product")) {
+                if (jsonReader.getTooted().stream()
+                        .anyMatch(t -> cmd.equalsIgnoreCase(t.getNimi()))) {
+                    toode = jsonReader.getTooted().stream()
+                            .filter(t -> cmd.equalsIgnoreCase(t.getNimi()))
+                            .findFirst()
+                            .orElse(null);
+
+                    // Küsime mitu tükki soovib kasutaja antud toodet osta
+                    dout.writeInt(1);
+                    dout.writeUTF("Enter quantity: ");
+                    currentSubScreen = "select quantity";
+                } else {
+                    dout.writeInt(1);
+                    dout.writeUTF("Invalid name:");
+                }
         } else if (currentSubScreen.equals("select quantity")) {
-            // vaatame, kas on meil piisavalt
+                // vaatame, kas on meil piisavalt
             try {
                 int quantity = Integer.parseInt(cmd);
                 // vaatame, kui palju meil antud toodet juba ostukorvis on
@@ -76,13 +121,10 @@ public class CatalogueHandler implements Screen {
                     dout.writeUTF("Please enter lower quantity: ");
                     currentSubScreen = "select quantity";
                 }
-            }
-            catch (NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 dout.writeInt(1);
                 dout.writeUTF("Invalid quantity. Please enter a valid number.");
             }
         }
     }
-
-
 }
