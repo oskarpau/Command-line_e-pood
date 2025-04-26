@@ -126,7 +126,7 @@ public class ClientHandler implements Runnable {
                     }
                     case "search" -> {
                         // proov toodete searchist
-                        searchHandler.show(dout, "products");
+                        searchHandler.show(dout);
                         currentScreen = "search";
                     }
                     case "cart" -> {

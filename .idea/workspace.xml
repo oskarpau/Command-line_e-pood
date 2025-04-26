@@ -6,8 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="b13b767d-aa6e-4f19-b987-096bb5d85783" name="Changes" comment="also did cartHandler like Oliver, but he was first, merge some parts if needed">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerClient.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/ClientHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/ClientHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/SearchHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/SearchHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/klientideAndmebaas.json" beforeDir="false" afterPath="$PROJECT_DIR$/klientideAndmebaas.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -40,12 +40,12 @@
     &quot;assignee&quot;: &quot;oskarpau&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/oskarpau/Command-line_e-pood.git&quot;,
-    &quot;accountId&quot;: &quot;53924fdd-6a44-4c70-8330-c9331f4c889d&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/oskarpau/Command-line_e-pood.git",
+    "accountId": "59c38f19-b100-491c-b582-35ace9206758"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
 }</component>
@@ -143,6 +143,7 @@
       <workItem from="1745263187675" duration="1159000" />
       <workItem from="1745313474377" duration="46000" />
       <workItem from="1745319721910" duration="4203000" />
+      <workItem from="1745690031190" duration="4368000" />
     </task>
     <task id="LOCAL−00001" summary="some minor fixes">
       <option name="closed" value="true" />
@@ -176,16 +177,5 @@
     <MESSAGE value="merging" />
     <MESSAGE value="also did cartHandler like Oliver, but he was first, merge some parts if needed" />
     <option name="LAST_COMMIT_MESSAGE" value="also did cartHandler like Oliver, but he was first, merge some parts if needed" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/epood/src/main/java/epood/Client.java</url>
-          <line>24</line>
-          <option name="timeStamp" value="3" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>
