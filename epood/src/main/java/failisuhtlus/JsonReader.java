@@ -31,12 +31,12 @@ public class JsonReader {
 
             for (int i = 0; i < tootedArray.length(); i++) {
                 JSONObject toode = tootedArray.getJSONObject(i);
-                tooted.add(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), BigDecimal.valueOf(toode.getDouble("hind")), toode.getInt("lao seis")));
+                tooted.add(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), toode.getString("kategooria"), BigDecimal.valueOf(toode.getDouble("hind")), toode.getInt("lao seis")));
             }
             return tooted;
         } catch (NoSuchFileException e) {
-            Toode õun = new Toode(1, "õun", BigDecimal.valueOf(0.39), 54);
-            Toode pirn = new Toode(2, "pirn", BigDecimal.valueOf(0.59), 32);
+            Toode õun = new Toode(1, "õun", "puuvili", BigDecimal.valueOf(0.39), 54);
+            Toode pirn = new Toode(2, "pirn", "puuvili", BigDecimal.valueOf(0.59), 32);
             List<Toode> tooted = new ArrayList<>();
             tooted.add(õun);
             tooted.add(pirn);

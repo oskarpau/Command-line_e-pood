@@ -20,7 +20,6 @@ public class LoginHandler{
     private String email;
     private String password;
     private byte currentSubScreen;
-    private byte type;
     private JsonManagerEmployee jsonManagerEmployee;
     private JsonManagerClient jsonManagerClient;
 
@@ -31,16 +30,16 @@ public class LoginHandler{
     }
 
 
-    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart, ClientServerSide client) throws IOException {
+    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart, Context context) throws IOException {
         switch (currentSubScreen) {
             case CHOOSE_TYPE:
                 if (cmd.equals("klient")) {
-                    type = CLIENT;
+                    context.type = CLIENT;
                     currentSubScreen =  ENTER_NAME;
                     dout.writeInt(1);
                     dout.writeUTF("Sisestage nimi: ");
                 } else if (cmd.equals("töötaja")) {
-                    type = EMPLOYEE;
+                    context.type = EMPLOYEE;
                     currentSubScreen =  ENTER_EMAIL;
                     dout.writeInt(1);
                     dout.writeUTF("Sisestage email: ");
@@ -57,28 +56,26 @@ public class LoginHandler{
             case ENTER_EMAIL:
                 if (EmailValidator.getInstance().isValid(cmd)) {
                     email = cmd;
-                    if (type == CLIENT) {
+                    if (context.type == CLIENT) {
                         // vaatame, kas meil on juba selline klient olemas
                         List<ClientServerSide> clients = jsonManagerClient.readJson();
-                        System.out.println("here1");
                         for (ClientServerSide c : clients) {
                             if (c.checkMatch(name, email)) {
-                                client = c;
+                                context.client = c; // peaksime client objektiga edasi tegeleme, et tellimus koos sellega vormistada
                                 dout.writeInt(1);
                                 dout.writeUTF("Tere tulemast tagasi " + name + " " + email +
                                         "\nKirjutage 'back', et minna peamenüüsse");
                                 return;
                             }
                         }
-                        System.out.println("here2");
                         ClientServerSide newClient = new ClientServerSide(name, email);
                         jsonManagerClient.writeJson(newClient);
-                        client = newClient;
+                        context.client = newClient; // peaksime client objektiga edasi tegeleme, et tellimus koos sellega vormistada
                         dout.writeInt(1);
                         dout.writeUTF("Olete loonud kasutaja: " + name + " " + email +
                                 "\nKirjutage 'back', et minna peamenüüsse");
                         return;
-                    } else if (type == EMPLOYEE) {
+                    } else if (context.type == EMPLOYEE) {
                         currentSubScreen =  ENTER_PASSWORD;
                         dout.writeInt(1);
                         dout.writeUTF("Sisestage parool: ");
