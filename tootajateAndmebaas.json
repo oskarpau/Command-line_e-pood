@@ -1,10 +1,10 @@
 [
   {
     "email": "oobruhmatoo@gmail.com",
-    "password": "1234"
+    "password": "$argon2id$v=19$m=65536,t=3,p=1$kBKVWpjThEFIIvq1TqWctg$buMr/Iu8XalE+1fCfnn3Xw"
   },
   {
     "email": "oskar@gmail.com",
-    "password": "1234"
+    "password": "$argon2id$v=19$m=65536,t=3,p=1$KF0Tq+KV/S3c7hhLgivN9g$UPMhcJ9LkphPS5ADIWg17Q"
   }
 ]

@@ -94,10 +94,20 @@ public class LoginHandler{
                 } break;
             case ENTER_PASSWORD:
                 password = cmd;
+
                 List<EmployeeServerSide> employees = jsonManagerEmployee.readJson();
                 System.out.println(employees);
+                EmployeeServerSide loginTarget = null;
                 for (EmployeeServerSide employee : employees) {
-                    if (employee.checkCredentials(email, password)) {
+                    if (employee.getEmail().equals(email)) {
+                        loginTarget = employee;
+                        break;
+                    }
+
+                }
+                if (loginTarget != null ){
+
+                    if (loginTarget.checkCredentials(email, password)) {
                         dout.writeInt(1);
                         dout.writeUTF("Olete edukalt sisseloginud (email: " + email + ")" +
                                 "\nKirjutage 'back', et minna peamenüüsse");
