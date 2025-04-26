@@ -1,0 +1,703 @@
+Index: epood/src/main/java/epood/ClientHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package epood;\r\n\r\nimport failisuhtlus.Ostukorv;\r\n\r\nimport java.io.DataInputStream;\r\nimport java.io.DataOutputStream;\r\nimport java.io.IOException;\r\nimport java.net.Socket;\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\nimport java.util.Arrays;\r\nimport java.util.regex.Matcher;\r\nimport java.util.regex.Pattern;\r\n\r\n\r\npublic class ClientHandler implements Runnable {\r\n    private final Socket socket;\r\n    private final Server server;\r\n    private String currentScreen = \"login\";\r\n\r\n    private CatalogueHandler catalogueHandler;\r\n    private CartHandler cartHandler;\r\n    private OrderHandler orderHandler;\r\n    private SearchHandler searchHandler;\r\n    private LoginHandler loginHandler;\r\n    private HistoryEmployeeHandler historyEmployeeHandler;\r\n    private HistoryClientHandler historyClientHandler;\r\n    private InventoryHandler inventoryHandler;\r\n    private Ostukorv cart;\r\n    static final byte CLIENT = 1;\r\n    static final byte EMPLOYEE = 2;\r\n    private Context context;\r\n\r\n    public ClientHandler(Socket socket, Server server) {\r\n        this.socket = socket;\r\n        this.server = server;\r\n        catalogueHandler = new CatalogueHandler();\r\n        cartHandler = new CartHandler();\r\n        orderHandler = new OrderHandler();\r\n        searchHandler = new SearchHandler();\r\n        loginHandler = new LoginHandler();\r\n        historyClientHandler = new HistoryClientHandler();\r\n        historyEmployeeHandler = new HistoryEmployeeHandler();\r\n        inventoryHandler = new InventoryHandler();\r\n        cart = new Ostukorv();\r\n        context = new Context();\r\n    }\r\n\r\n    public void run() {\r\n        try (socket;\r\n             DataInputStream din = new DataInputStream(socket.getInputStream());\r\n             DataOutputStream dout = new DataOutputStream(socket.getOutputStream())) {\r\n\r\n            // initsialiseerime vajalikud handlerid\r\n            CatalogueHandler catalogueHandler = new CatalogueHandler();\r\n\r\n            //kommunikatsioon algab\r\n            System.out.println(\"client connected; waiting for a command\");\r\n            dout.writeInt(1);\r\n            dout.writeUTF(\"Tere tulemast meie e-poodi!\\nVali, kes sa oled:\\nklient, töötaja\");\r\n\r\n            while (true) {\r\n                String[] cmdFull = extractArgs(din.readUTF());\r\n                String cmd = cmdFull[0];\r\n                String[] args = Arrays.copyOfRange(cmdFull, 1, cmdFull.length);\r\n                System.out.println(\"received cmd: \" + cmd);\r\n                System.out.println(\"args: \" + Arrays.toString(args));\r\n\r\n                //variant 1, ärge seda rohkem kasutage\r\n                if (cmd.equals(\"exit\")) { //exit ja ainult exit\r\n                    System.out.println(\"client disconnected\");\r\n                    break;\r\n                }\r\n\r\n                interpretCmd(cmd, args, din, dout);\r\n            }\r\n            //kommunikatsioon lõpeb\r\n            System.out.println(\"Closed connection with client\");\r\n        } catch (IOException e) {\r\n            throw new RuntimeException(e);\r\n        }\r\n    }\r\n\r\n    private static String[] extractArgs(String cmd) {\r\n        List<String> parts = new ArrayList<>();\r\n        Pattern pattern = Pattern.compile(\"\\\"([^\\\"]*)\\\"|\\\\S+\"); // Match quoted text OR words\r\n        Matcher matcher = pattern.matcher(cmd);\r\n        while (matcher.find()) {\r\n            if (matcher.group(1) != null) {\r\n                parts.add(matcher.group(1)); // Extract text inside quotes (group 1)\r\n            } else {\r\n                parts.add(matcher.group()); // Extract normal words\r\n            }\r\n        }\r\n        return parts.toArray(new String[0]);\r\n    }\r\n\r\n    private void interpretCmd(String cmd, String[] args, DataInputStream din, DataOutputStream dout) throws IOException {\r\n        if (cmd.equalsIgnoreCase(\"back\")) {\r\n            if (!currentScreen.equals(\"main\")) {\r\n                showMain(dout);\r\n                currentScreen = \"main\";\r\n                System.out.println(\"here\");\r\n                System.out.println(currentScreen);\r\n\r\n            } else {\r\n                dout.writeInt(1);\r\n                dout.writeUTF(\"Olete juba peamenüüs\");\r\n            }\r\n            return;\r\n        }\r\n\r\n        //variant 2. saab viidata ka muude klasside meetoditele jne. lisage vaid case juurde viitadega meetoditele\r\n        // '->' süntaksi kasutamine välimises switchis viskas erroreid\r\n        System.out.println(currentScreen);\r\n        switch (currentScreen) {\r\n            case \"login\":\r\n                loginHandler.handler(dout, cmd, args, cart, context); break;\r\n            case \"main\":\r\n                switch (cmd) {\r\n                    case \"echo\" -> echo(dout, args);\r\n                    case \"help\" -> help(dout);\r\n                    case \"catalogue\" -> {\r\n                        catalogueHandler.show(dout);\r\n                        currentScreen = \"catalogue\";\r\n                    }\r\n                    case \"search\" -> {\r\n                        // proov toodete searchist\r\n                        searchHandler.show(dout, \"products\");\r\n                        currentScreen = \"search\";\r\n                    }\r\n                    case \"cart\" -> {\r\n                        cartHandler.show(dout);\r\n                        currentScreen = \"cart\";\r\n                    }\r\n                    case \"order\" -> {\r\n                        orderHandler.show(dout);\r\n                        currentScreen = \"order\";\r\n                    }\r\n                    case \"inventory\" -> {\r\n                        if (context.type == EMPLOYEE) {\r\n                            InventoryHandler.show(dout);\r\n                            currentScreen = \"inventory\";\r\n                        } else if (context.type == CLIENT) {\r\n                            dout.writeInt(1);\r\n                            dout.writeUTF(\"invalid command, for common commands type: help\");\r\n                        }\r\n                    }\r\n                    case \"history\" -> {\r\n                        if (context.type == EMPLOYEE) {\r\n                            historyEmployeeHandler.show(dout);\r\n                            currentScreen = \"history_employee\";\r\n                        } else if (context.type == CLIENT) {\r\n                            historyClientHandler.show(dout);\r\n                            currentScreen = \"history_client\";\r\n                        }\r\n                    }\r\n                    default -> {\r\n                        dout.writeInt(1);\r\n                        dout.writeUTF(\"invalid command, for common commands type: help\");\r\n                    }\r\n                }\r\n                break;\r\n\r\n            case \"catalogue\": catalogueHandler.handler(dout, cmd, args, cart); break;\r\n            case \"search\": searchHandler.handler(dout, cmd, args, cart); break;\r\n            case \"cart\": cartHandler.handler(dout, cmd, args, cart); break;\r\n            case \"order\": orderHandler.handler(dout, cmd, args, cart); break;\r\n            case \"inventory\": InventoryHandler.handler(dout, cmd, args);break;\r\n            case \"history_employee\": historyEmployeeHandler.handler(dout, cmd, args);break;\r\n            case \"history_client\": historyClientHandler.handler(dout, cmd, args);break;\r\n            default: {\r\n                System.out.println(\"undefined category, smth broken\");\r\n            }\r\n        }\r\n\r\n\r\n    }\r\n\r\n    private void showMain(DataOutputStream dout) throws IOException {\r\n        if (context.type == CLIENT) {\r\n            dout.writeInt(1);\r\n            dout.writeUTF(\"Palun valige üks alljärgnevatest:\\ncatalogue; search; cart; order; history; exit\\nsisestage 'back', et naasta peamenüüsse\");\r\n        } else if (context.type == EMPLOYEE) {\r\n            dout.writeInt(1);\r\n            dout.writeUTF(\"Palun valige üks alljärgnevatest:\\ncatalogue; search; cart; order; inventory; history; exit\\nsisestage 'back', et naasta peamenüüsse\");\r\n        }\r\n    }\r\n\r\n\r\n\r\n    private void help(DataOutputStream dout) throws IOException {\r\n        System.out.println(\"helping\");\r\n        String[] cmdList = {\"exit\", \"help\", \"back\", \"catalogue\", \"search\", \"cart\", \"order\"};\r\n        dout.writeInt(cmdList.length);\r\n        for (String cmd : cmdList) {\r\n            dout.writeUTF(cmd);\r\n        }\r\n    }\r\n\r\n    private static void echo(DataOutputStream dout, String[] args) throws IOException {\r\n        System.out.println(\"echoing\");\r\n        if (args.length == 1 && !args[0].startsWith(\"-\")) {\r\n            dout.writeInt(1);\r\n            dout.writeUTF(args[0]);\r\n        }\r\n//        for (int i = 0; i < messageLength; i++) {\r\n//            msg += din.readUTF() + \" \";\r\n//        }\r\n//        System.out.println(\"received message: \" + msg);\r\n//        dout.writeInt(1);\r\n//        dout.writeUTF(msg);\r\n    }\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/epood/ClientHandler.java b/epood/src/main/java/epood/ClientHandler.java
+--- a/epood/src/main/java/epood/ClientHandler.java	(revision c919c55d492cbd249975ba0cf341c950c2e2062b)
++++ b/epood/src/main/java/epood/ClientHandler.java	(date 1745672158475)
+@@ -121,7 +121,7 @@
+                     case "echo" -> echo(dout, args);
+                     case "help" -> help(dout);
+                     case "catalogue" -> {
+-                        catalogueHandler.show(dout);
++                        catalogueHandler.show_categories(dout);
+                         currentScreen = "catalogue";
+                     }
+                     case "search" -> {
+Index: epood/src/main/java/epood/CatalogueHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package epood;\r\n\r\nimport failisuhtlus.Ostukorv;\r\nimport failisuhtlus.Toode;\r\nimport failisuhtlus.JsonReader;\r\n\r\nimport java.io.DataOutputStream;\r\nimport java.io.IOException;\r\nimport java.util.Map;\r\n\r\npublic class CatalogueHandler implements Screen {\r\n    private String currentSubScreen;\r\n    private Toode toode;\r\n\r\n    // peaks olema tegelikult kõikide klientide peale ainult 1 reader, aga panin hetkel siia, et debugida\r\n    private final JsonReader jsonReader = new JsonReader(\"andmebaas.json\");\r\n\r\n    public CatalogueHandler() {\r\n    }\r\n\r\n    public void show(DataOutputStream dout) throws IOException {\r\n        // näitame kõiki tooteid\r\n        currentSubScreen = \"select product\";\r\n        StringBuilder tooted = new StringBuilder();\r\n        jsonReader.getTooted().forEach(t -> tooted.append(t.toString()).append(\"\\n\"));\r\n        dout.writeInt(1);\r\n        dout.writeUTF(\"Products: \\n\" +\r\n                tooted + \"\\n\" +\r\n                \"Enter name of the product: \");\r\n    }\r\n\r\n    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart) throws IOException {\r\n        if (currentSubScreen.equals(\"select product\")) {\r\n            if (jsonReader.getTooted().stream()\r\n                .anyMatch(t -> cmd.equalsIgnoreCase(t.getNimi()))) {\r\n                toode = jsonReader.getTooted().stream()\r\n                        .filter(t -> cmd.equalsIgnoreCase(t.getNimi()))\r\n                        .findFirst()\r\n                        .orElse(null);\r\n\r\n                // Küsime mitu tükki soovib kasutaja antud toodet osta\r\n                dout.writeInt(1);\r\n                dout.writeUTF(\"Enter quantity: \");\r\n                currentSubScreen = \"select quantity\";\r\n        } else {\r\n                dout.writeInt(1);\r\n                dout.writeUTF(\"Invalid name:\");\r\n        }\r\n        } else if (currentSubScreen.equals(\"select quantity\")) {\r\n            // vaatame, kas on meil piisavalt\r\n            try {\r\n                int quantity = Integer.parseInt(cmd);\r\n                // vaatame, kui palju meil antud toodet juba ostukorvis on\r\n                Toode inCart = null;\r\n                Integer quantityInCart = 0;\r\n                for (Map.Entry<Toode, Integer> entry : cart.getItems().entrySet()) {\r\n                    String name = entry.getKey().getNimi();\r\n                    if (name.equals(toode.getNimi())) {\r\n                        quantityInCart = entry.getValue();\r\n                    }\r\n                }\r\n\r\n                if (toode.getLao_seis() >= (quantity + quantityInCart)) {\r\n                    if (quantity <= 0) {\r\n                        dout.writeInt(1);\r\n                        dout.writeUTF(\"Please enter positive quantity.\\nNo product added to the cart.\");\r\n                    } else {\r\n                        cart.addToode(toode, quantity);\r\n                        dout.writeInt(1);\r\n                        dout.writeUTF(\"Product added to the cart. \\n\" +\r\n                                \"Enter name of the product: \");\r\n                    }\r\n                    currentSubScreen = \"select product\";\r\n                } else {\r\n                    dout.writeInt(1);\r\n                    dout.writeUTF(\"Please enter lower quantity: \");\r\n                    currentSubScreen = \"select quantity\";\r\n                }\r\n            }\r\n            catch (NumberFormatException e) {\r\n                dout.writeInt(1);\r\n                dout.writeUTF(\"Invalid quantity. Please enter a valid number.\");\r\n            }\r\n        }\r\n    }\r\n\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/epood/CatalogueHandler.java b/epood/src/main/java/epood/CatalogueHandler.java
+--- a/epood/src/main/java/epood/CatalogueHandler.java	(revision c919c55d492cbd249975ba0cf341c950c2e2062b)
++++ b/epood/src/main/java/epood/CatalogueHandler.java	(date 1745672158473)
+@@ -6,11 +6,13 @@
+ 
+ import java.io.DataOutputStream;
+ import java.io.IOException;
++import java.util.HashSet;
+ import java.util.Map;
+ 
+ public class CatalogueHandler implements Screen {
+     private String currentSubScreen;
+     private Toode toode;
++    private String kategooria;
+ 
+     // peaks olema tegelikult kõikide klientide peale ainult 1 reader, aga panin hetkel siia, et debugida
+     private final JsonReader jsonReader = new JsonReader("andmebaas.json");
+@@ -18,6 +20,19 @@
+     public CatalogueHandler() {
+     }
+ 
++    public void show_categories(DataOutputStream dout) throws IOException {
++        // näitame kõiki kategooriaid
++        currentSubScreen = "select category";
++        StringBuilder categories = new StringBuilder();
++        HashSet categoriesSet = new HashSet();
++        jsonReader.getTooted().forEach(t -> categoriesSet.add(t.getKategooria()));
++        categoriesSet.forEach(c -> categories.append(c).append("\n"));
++        dout.writeInt(1);
++        dout.writeUTF("Categories: \n" +
++                categories + "\n" +
++                "Enter name of the category: ");
++    }
++
+     public void show(DataOutputStream dout) throws IOException {
+         // näitame kõiki tooteid
+         currentSubScreen = "select product";
+@@ -28,26 +43,56 @@
+                 tooted + "\n" +
+                 "Enter name of the product: ");
+     }
++
++    public void show(DataOutputStream dout, String kategooria) throws IOException {
++        // näitame kõiki tooteid
++        currentSubScreen = "select product";
++        StringBuilder tooted = new StringBuilder();
++        jsonReader.getTooted().forEach(t -> {
++            if (t.getKategooria().equals(kategooria)) {
++                tooted.append(t.toString()).append("\n");
++            }
++        });
++        dout.writeInt(1);
++        dout.writeUTF("Products: \n" +
++                tooted + "\n" +
++                "Enter name of the product: ");
++    }
+ 
+     public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart) throws IOException {
+-        if (currentSubScreen.equals("select product")) {
++        if (currentSubScreen.equals("select category")) {
+             if (jsonReader.getTooted().stream()
+-                .anyMatch(t -> cmd.equalsIgnoreCase(t.getNimi()))) {
+-                toode = jsonReader.getTooted().stream()
+-                        .filter(t -> cmd.equalsIgnoreCase(t.getNimi()))
+-                        .findFirst()
+-                        .orElse(null);
++                    .anyMatch(t -> cmd.equalsIgnoreCase(t.getKategooria()))) {
++                kategooria = cmd;
++                show(dout, kategooria);
++                /*
++                // Küsime mitu tükki soovib kasutaja antud toodet osta
++                dout.writeInt(1);
++                dout.writeUTF("Enter name of the product: ");
++                currentSubScreen = "select product";
++                 */
++            }  else {
++                dout.writeInt(1);
++                dout.writeUTF("Invalid name:");
++            }
++        } else if (currentSubScreen.equals("select product")) {
++                if (jsonReader.getTooted().stream()
++                        .anyMatch(t -> cmd.equalsIgnoreCase(t.getNimi()))) {
++                    toode = jsonReader.getTooted().stream()
++                            .filter(t -> cmd.equalsIgnoreCase(t.getNimi()))
++                            .findFirst()
++                            .orElse(null);
+ 
+-                // Küsime mitu tükki soovib kasutaja antud toodet osta
+-                dout.writeInt(1);
+-                dout.writeUTF("Enter quantity: ");
+-                currentSubScreen = "select quantity";
+-        } else {
+-                dout.writeInt(1);
+-                dout.writeUTF("Invalid name:");
+-        }
++                    // Küsime mitu tükki soovib kasutaja antud toodet osta
++                    dout.writeInt(1);
++                    dout.writeUTF("Enter quantity: ");
++                    currentSubScreen = "select quantity";
++                } else {
++                    dout.writeInt(1);
++                    dout.writeUTF("Invalid name:");
++                }
+         } else if (currentSubScreen.equals("select quantity")) {
+-            // vaatame, kas on meil piisavalt
++                // vaatame, kas on meil piisavalt
+             try {
+                 int quantity = Integer.parseInt(cmd);
+                 // vaatame, kui palju meil antud toodet juba ostukorvis on
+@@ -76,13 +121,10 @@
+                     dout.writeUTF("Please enter lower quantity: ");
+                     currentSubScreen = "select quantity";
+                 }
+-            }
+-            catch (NumberFormatException e) {
++            } catch (NumberFormatException e) {
+                 dout.writeInt(1);
+                 dout.writeUTF("Invalid quantity. Please enter a valid number.");
+             }
+         }
+     }
+-
+-
+ }
+Index: andmebaas.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>{\r\n  \"kommentaarid\":\r\n  [\r\n    {\r\n      \"aeg\":\"2025-03-26 11:08:53\",\r\n      \"toode\":1,\r\n      \"sisu\":\"Väga head õunad\"\r\n    }\r\n  ],\r\n  \"tooted\":\r\n  [\r\n    {\r\n      \"nimi\":\"õun\",\r\n      \"tootenumber\":1,\r\n      \"hind\":0.39,\r\n      \"lao seis\":54\r\n    },\r\n    {\r\n      \"nimi\":\"pirn\",\r\n      \"tootenumber\":2,\r\n      \"hind\":0.59,\r\n      \"lao seis\":32\r\n    }\r\n  ]\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/andmebaas.json b/andmebaas.json
+--- a/andmebaas.json	(revision c919c55d492cbd249975ba0cf341c950c2e2062b)
++++ b/andmebaas.json	(date 1745672158471)
+@@ -11,15 +11,24 @@
+   [
+     {
+       "nimi":"õun",
++      "kategooria": "puuvili",
+       "tootenumber":1,
+       "hind":0.39,
+       "lao seis":54
+     },
+     {
+       "nimi":"pirn",
++      "kategooria":"puuvili",
+       "tootenumber":2,
+       "hind":0.59,
+       "lao seis":32
++    },
++    {
++      "nimi":"monster",
++      "kategooria":"energiajook",
++      "tootenumber":2,
++      "hind": 1.19,
++      "lao seis":12
+     }
+   ]
+ }
+\ No newline at end of file
+Index: epood/src/main/java/failisuhtlus/JsonReader.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package failisuhtlus;\r\n\r\nimport org.json.JSONArray;\r\nimport org.json.JSONObject;\r\n\r\nimport java.io.FileWriter;\r\nimport java.io.IOException;\r\nimport java.math.BigDecimal;\r\nimport java.nio.file.Files;\r\nimport java.nio.file.NoSuchFileException;\r\nimport java.nio.file.Paths;\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\n\r\npublic class JsonReader {\r\n    private String fail;\r\n\r\n    public JsonReader(String fail) {\r\n        this.fail = fail;\r\n    }\r\n\r\n\r\n    public List<Toode> getTooted() throws IOException {\r\n\r\n        try {\r\n            List<Toode> tooted = new ArrayList<>();\r\n\r\n            JSONObject json = getJSON();\r\n\r\n            JSONArray tootedArray = json.getJSONArray(\"tooted\");\r\n\r\n            for (int i = 0; i < tootedArray.length(); i++) {\r\n                JSONObject toode = tootedArray.getJSONObject(i);\r\n                tooted.add(new Toode(toode.getInt(\"tootenumber\"), toode.getString(\"nimi\"), BigDecimal.valueOf(toode.getDouble(\"hind\")), toode.getInt(\"lao seis\")));\r\n            }\r\n            return tooted;\r\n        } catch (NoSuchFileException e) {\r\n            Toode õun = new Toode(1, \"õun\", BigDecimal.valueOf(0.39), 54);\r\n            Toode pirn = new Toode(2, \"pirn\", BigDecimal.valueOf(0.59), 32);\r\n            List<Toode> tooted = new ArrayList<>();\r\n            tooted.add(õun);\r\n            tooted.add(pirn);\r\n            return tooted;\r\n\r\n        }\r\n\r\n\r\n    }\r\n\r\n    public void addToode(Toode toode) throws IOException {\r\n\r\n        JSONObject json = getJSON();\r\n\r\n        JSONArray tootedArray = json.getJSONArray(\"tooted\");\r\n\r\n        JSONObject toodeJson = new JSONObject();\r\n        toodeJson.put(\"tootenumber\", toode.getNumber());\r\n        toodeJson.put(\"nimi\", toode.getNimi());\r\n        toodeJson.put(\"hind\", toode.getHind());\r\n        toodeJson.put(\"lao seis\", toode.getLao_seis());\r\n\r\n        tootedArray.put(toodeJson);\r\n\r\n        updateJson(json);\r\n    }\r\n\r\n    private JSONObject getJSON() throws IOException {\r\n        String content;\r\n        content = new String(Files.readAllBytes(Paths.get(\"andmebaas.json\")));\r\n\r\n        return new JSONObject(content);\r\n    }\r\n\r\n    private void updateJson(JSONObject json) throws IOException {\r\n        try (FileWriter fileWriter = new FileWriter(fail)) {\r\n            fileWriter.write(json.toString());\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/failisuhtlus/JsonReader.java b/epood/src/main/java/failisuhtlus/JsonReader.java
+--- a/epood/src/main/java/failisuhtlus/JsonReader.java	(revision c919c55d492cbd249975ba0cf341c950c2e2062b)
++++ b/epood/src/main/java/failisuhtlus/JsonReader.java	(date 1745672158476)
+@@ -31,12 +31,12 @@
+ 
+             for (int i = 0; i < tootedArray.length(); i++) {
+                 JSONObject toode = tootedArray.getJSONObject(i);
+-                tooted.add(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), BigDecimal.valueOf(toode.getDouble("hind")), toode.getInt("lao seis")));
++                tooted.add(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), toode.getString("kategooria"), BigDecimal.valueOf(toode.getDouble("hind")), toode.getInt("lao seis")));
+             }
+             return tooted;
+         } catch (NoSuchFileException e) {
+-            Toode õun = new Toode(1, "õun", BigDecimal.valueOf(0.39), 54);
+-            Toode pirn = new Toode(2, "pirn", BigDecimal.valueOf(0.59), 32);
++            Toode õun = new Toode(1, "õun", "puuvili", BigDecimal.valueOf(0.39), 54);
++            Toode pirn = new Toode(2, "pirn", "puuvili", BigDecimal.valueOf(0.59), 32);
+             List<Toode> tooted = new ArrayList<>();
+             tooted.add(õun);
+             tooted.add(pirn);
+Index: epood/src/main/java/epood/Server.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package epood;\r\n\r\nimport failisuhtlus.JsonManagerClient;\r\n\r\nimport java.io.*;\r\nimport java.net.ServerSocket;\r\nimport java.net.Socket;\r\nimport java.nio.file.Files;\r\nimport java.nio.file.Path;\r\nimport java.nio.file.Paths;\r\nimport java.util.concurrent.ExecutorService;\r\nimport java.util.concurrent.Executors;\r\n\r\npublic class Server {\r\n    String path = \"serverFiles\" + File.separatorChar;\r\n    static final byte TYPE_OK = 5;\r\n    static final byte TYPE_ERROR_NOT_FOUND = 6;\r\n    static final byte TYPE_ERROR_ABS_PATH = 7;\r\n\r\n    public static void main(String[] args) throws Exception {\r\n        try (ExecutorService pool = Executors.newCachedThreadPool()) {\r\n            Server server = new Server();\r\n\r\n            try (ServerSocket ss = new ServerSocket(1337)) {\r\n                System.out.println(\"now listening on :1337\");\r\n                while (true) {\r\n                    Socket clientsocket = ss.accept();\r\n                    pool.execute(new ClientHandler(clientsocket, server));\r\n                }\r\n            }\r\n        }\r\n\r\n        //System.out.println(\"Server pandi kinni, sest serveriga oli üle kahe korra ühendatud\");\r\n    }\r\n\r\n\r\n\r\n\r\n    public void sendFile(DataInputStream din, DataOutputStream dout) throws IOException {\r\n        int bytes = 0;\r\n        String failinimi = path + din.readUTF();\r\n        Path pathFile = Paths.get(failinimi);\r\n        System.out.print(\"Sending of file status: \");\r\n        if (!Files.exists(pathFile)) {\r\n            dout.writeByte(TYPE_ERROR_NOT_FOUND);\r\n            System.out.println(\"TYPE_ERROR_NOT_FOUND\");\r\n            return;\r\n        } else if (pathFile.isAbsolute()) {\r\n            dout.writeByte(TYPE_ERROR_ABS_PATH);\r\n            System.out.println(\"TYPE_ERROR_ABS_PATH\");\r\n            return;\r\n        } else { // eeldame, et rohkem erroreid pole\r\n            dout.writeByte(TYPE_OK);\r\n            System.out.println(\"TYPE_OK\");\r\n        }\r\n        File file = new File(failinimi);\r\n\r\n        try(FileInputStream fis = new FileInputStream(file)) {\r\n            dout.writeLong(file.length());\r\n            byte[] buffer = new byte[4 * 1024];\r\n            while ((bytes = fis.read(buffer)) != -1) {\r\n                dout.write(buffer, 0, bytes);\r\n                dout.flush();\r\n            }\r\n            System.out.println(\"File sent\");\r\n        }\r\n    }\r\n\r\n}\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/epood/Server.java b/epood/src/main/java/epood/Server.java
+--- a/epood/src/main/java/epood/Server.java	(revision c919c55d492cbd249975ba0cf341c950c2e2062b)
++++ b/epood/src/main/java/epood/Server.java	(date 1745672158475)
+@@ -1,70 +1,55 @@
+ package epood;
+ 
+-import failisuhtlus.JsonManagerClient;
+-
++import javax.net.ssl.KeyManager;
++import javax.net.ssl.KeyManagerFactory;
++import javax.net.ssl.SSLContext;
+ import java.io.*;
+ import java.net.ServerSocket;
+ import java.net.Socket;
+-import java.nio.file.Files;
+-import java.nio.file.Path;
+-import java.nio.file.Paths;
++import java.security.*;
++import java.security.cert.CertificateException;
+ import java.util.concurrent.ExecutorService;
+ import java.util.concurrent.Executors;
+ 
+ public class Server {
+-    String path = "serverFiles" + File.separatorChar;
+-    static final byte TYPE_OK = 5;
+-    static final byte TYPE_ERROR_NOT_FOUND = 6;
+-    static final byte TYPE_ERROR_ABS_PATH = 7;
+ 
+     public static void main(String[] args) throws Exception {
+         try (ExecutorService pool = Executors.newCachedThreadPool()) {
+             Server server = new Server();
+ 
+-            try (ServerSocket ss = new ServerSocket(1337)) {
+-                System.out.println("now listening on :1337");
+-                while (true) {
+-                    Socket clientsocket = ss.accept();
+-                    pool.execute(new ClientHandler(clientsocket, server));
+-                }
+-            }
+-        }
++            secure(server, pool);  //TLS-iga port connection
++
++//            try (ServerSocket ss = new ServerSocket(1337)) {
++//                System.out.println("now listening on :1337");
++//                while (true) {
++//                    Socket clientsocket = ss.accept();
++//                    pool.execute(new ClientHandler(clientsocket, server));
++//                }
++//            }
++        }
++    }
++
++
++    private static void secure(Server server, ExecutorService pool) throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException {
++        File storeFile = new File("epood/keystore.p12"); //public ja private keyd
++        String storePass = "secret"; //serveri võtme salasõna, peaks genereerima, aga kuna võtmed tulevad cmdlinelt ss las ta olla
++
++        KeyStore store = KeyStore.getInstance(storeFile, storePass.toCharArray());
++        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
++        kmf.init(store, storePass.toCharArray());
++        KeyManager[] keyManagers = kmf.getKeyManagers();
++
++        SSLContext ctx = SSLContext.getInstance("TLS");
++        ctx.init(keyManagers, null, null);
++        try (ServerSocket ss = ctx.getServerSocketFactory().createServerSocket(1337)) {
++            // use like a regular server socket
++            System.out.println("now listening on :1337");
++            while (true) {
++                Socket clientsocket = ss.accept();
++                pool.execute(new ClientHandler(clientsocket, server));
++            }
++        }
++    }
+ 
+-        //System.out.println("Server pandi kinni, sest serveriga oli üle kahe korra ühendatud");
+-    }
+-
+-
+-
+-
+-    public void sendFile(DataInputStream din, DataOutputStream dout) throws IOException {
+-        int bytes = 0;
+-        String failinimi = path + din.readUTF();
+-        Path pathFile = Paths.get(failinimi);
+-        System.out.print("Sending of file status: ");
+-        if (!Files.exists(pathFile)) {
+-            dout.writeByte(TYPE_ERROR_NOT_FOUND);
+-            System.out.println("TYPE_ERROR_NOT_FOUND");
+-            return;
+-        } else if (pathFile.isAbsolute()) {
+-            dout.writeByte(TYPE_ERROR_ABS_PATH);
+-            System.out.println("TYPE_ERROR_ABS_PATH");
+-            return;
+-        } else { // eeldame, et rohkem erroreid pole
+-            dout.writeByte(TYPE_OK);
+-            System.out.println("TYPE_OK");
+-        }
+-        File file = new File(failinimi);
+-
+-        try(FileInputStream fis = new FileInputStream(file)) {
+-            dout.writeLong(file.length());
+-            byte[] buffer = new byte[4 * 1024];
+-            while ((bytes = fis.read(buffer)) != -1) {
+-                dout.write(buffer, 0, bytes);
+-                dout.flush();
+-            }
+-            System.out.println("File sent");
+-        }
+-    }
+-
+ }
+ 
+Index: epood/src/main/java/epood/Client.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package epood;\r\n\r\n// käsurea argumendid: file fail1.txt echo tere kaks korda file error.txt\r\n\r\nimport java.io.*;\r\nimport java.net.Socket;\r\nimport java.util.Arrays;\r\nimport java.util.List;\r\nimport java.util.Scanner;\r\n\r\npublic class Client {\r\n\r\n    public static void main(String[] args) throws Exception {\r\n\r\n        System.out.println(\"connecting to server\");\r\n        try (Socket socket = new Socket(\"localhost\", 1337);\r\n             DataInputStream din = new DataInputStream(socket.getInputStream());\r\n             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());\r\n             Scanner console = new Scanner(System.in)) {\r\n\r\n            System.out.println(\"connected; entering command: \");\r\n            //suhtlus\r\n            readServer(din);\r\n            while (true) {\r\n                writeServer(console, dout);\r\n                try {\r\n                    readServer(din);\r\n                } catch (EOFException e) { //handler lõpetas töö\r\n                    System.out.println(\"closing connection\");\r\n                    break;\r\n                }\r\n            }\r\n\r\n        } finally {\r\n            System.out.println(\"Client has finished\");\r\n        }\r\n    }\r\n\r\n    private static void writeServer(Scanner console, DataOutputStream dout) throws IOException {\r\n        String cmd = String.valueOf(console.nextLine());//kasutaja sisend\r\n        dout.writeUTF(cmd);                             //saadab handlerile\r\n    }\r\n\r\n    private static void readServer(DataInputStream din) throws IOException {\r\n        int len = din.readInt();                        //mitu vastust tuleb\r\n        for (int i = 0; i < len; i++) {\r\n            System.out.println(din.readUTF());          //väljasta kasutajale\r\n        }\r\n    }\r\n\r\n\r\n    //vanad kodutöö meetodid, ei tea kas kasulik\r\n    /*\r\n    public void sendMsg(DataInputStream din, DataOutputStream dout, List<String> msg) throws Exception {\r\n        dout.writeInt(0);\r\n        dout.writeInt(msg.size());\r\n        for (String s : msg) {\r\n            dout.writeUTF(s);\r\n        }\r\n        System.out.println(\"sent message: \" + msg);\r\n        String resp = din.readUTF();\r\n        System.out.println(\"received response: \" + resp);\r\n    }\r\n\r\n    public void requestFile(DataInputStream din, DataOutputStream dout, String failinimi) throws IOException {\r\n        dout.writeInt(1);\r\n        dout.writeUTF(failinimi);\r\n        System.out.println(\"Asked for file: \" + failinimi);\r\n        receiveFile(din, failinimi);\r\n    }\r\n\r\n    public void receiveFile(DataInputStream din, String failinimi) throws IOException {\r\n        int bytes = 0;\r\n        int ok_status = din.readByte();\r\n        if (ok_status == 6) {\r\n            System.out.println(\"ERROR: no file found\");\r\n            return;\r\n        } else if (ok_status == 7) {\r\n            System.out.println(\"ERROR: absolute path was provided\");\r\n            return;\r\n        } else if (ok_status == 5) {\r\n            System.out.println(\"file received from server\");\r\n        } else {\r\n            System.out.println(\"ERROR: unknown status \" + ok_status);\r\n            return;\r\n        }\r\n\r\n        // try with resources\r\n        try (FileOutputStream fos = new FileOutputStream(path + failinimi)) {\r\n            long size = din.readLong();\r\n            byte[] buffer = new byte[4 * 1024];\r\n            while (size > 0 && (bytes = din.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {\r\n                fos.write(buffer, 0, bytes);\r\n                size -= bytes;\r\n            }\r\n            System.out.println(\"file saved\");\r\n        }\r\n    } */\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/epood/Client.java b/epood/src/main/java/epood/Client.java
+--- a/epood/src/main/java/epood/Client.java	(revision c919c55d492cbd249975ba0cf341c950c2e2062b)
++++ b/epood/src/main/java/epood/Client.java	(date 1745672158474)
+@@ -2,8 +2,16 @@
+ 
+ // käsurea argumendid: file fail1.txt echo tere kaks korda file error.txt
+ 
++import javax.net.ssl.SSLContext;
++import javax.net.ssl.TrustManager;
++import javax.net.ssl.TrustManagerFactory;
+ import java.io.*;
+ import java.net.Socket;
++import java.security.KeyManagementException;
++import java.security.KeyStore;
++import java.security.KeyStoreException;
++import java.security.NoSuchAlgorithmException;
++import java.security.cert.CertificateException;
+ import java.util.Arrays;
+ import java.util.List;
+ import java.util.Scanner;
+@@ -13,10 +21,62 @@
+     public static void main(String[] args) throws Exception {
+ 
+         System.out.println("connecting to server");
+-        try (Socket socket = new Socket("localhost", 1337);
++
++        secureConnection(1337); //hangi ühendus TLS-iga
++
++        //unsecure connection
++//        try (Socket socket = new Socket("localhost", 1337);
++//             DataInputStream din = new DataInputStream(socket.getInputStream());
++//             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
++//             Scanner console = new Scanner(System.in)) {
++//
++//            System.out.println("connected; entering command: ");
++//            //suhtlus
++//            readServer(din);
++//            while (true) {
++//                writeServer(console, dout);
++//                try {
++//                    readServer(din);
++//                } catch (EOFException e) { //handler lõpetas töö
++//                    System.out.println("closing connection");
++//                    break;
++//                }
++//            }
++//
++//        } finally {
++//            System.out.println("Client has finished");
++//        }
++    }
++
++    private static void writeServer(Scanner console, DataOutputStream dout) throws IOException {
++        String cmd = String.valueOf(console.nextLine());//kasutaja sisend
++        dout.writeUTF(cmd);                             //saadab handlerile
++    }
++
++    private static void readServer(DataInputStream din) throws IOException {
++        int len = din.readInt();                        //mitu vastust tuleb
++        for (int i = 0; i < len; i++) {
++            System.out.println(din.readUTF());          //väljasta kasutajale
++        }
++    }
++
++
++    private static void secureConnection(int port) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, KeyManagementException {
++        File storeFile = new File("epood/truststore.p12");
++        String storePass = "secret";
++
++        KeyStore store = KeyStore.getInstance(storeFile, storePass.toCharArray());
++        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
++        tmf.init(store);
++        TrustManager[] trustManagers = tmf.getTrustManagers();
++
++        SSLContext ctx = SSLContext.getInstance("TLS");
++        ctx.init(null, trustManagers, null);
++        try (Socket socket = ctx.getSocketFactory().createSocket("localhost", port);
+              DataInputStream din = new DataInputStream(socket.getInputStream());
+              DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
+              Scanner console = new Scanner(System.in)) {
++            // use like a regular socket
+ 
+             System.out.println("connected; entering command: ");
+             //suhtlus
+@@ -30,71 +90,8 @@
+                     break;
+                 }
+             }
+-
+         } finally {
+             System.out.println("Client has finished");
+         }
+     }
+-
+-    private static void writeServer(Scanner console, DataOutputStream dout) throws IOException {
+-        String cmd = String.valueOf(console.nextLine());//kasutaja sisend
+-        dout.writeUTF(cmd);                             //saadab handlerile
+-    }
+-
+-    private static void readServer(DataInputStream din) throws IOException {
+-        int len = din.readInt();                        //mitu vastust tuleb
+-        for (int i = 0; i < len; i++) {
+-            System.out.println(din.readUTF());          //väljasta kasutajale
+-        }
+-    }
+-
+-
+-    //vanad kodutöö meetodid, ei tea kas kasulik
+-    /*
+-    public void sendMsg(DataInputStream din, DataOutputStream dout, List<String> msg) throws Exception {
+-        dout.writeInt(0);
+-        dout.writeInt(msg.size());
+-        for (String s : msg) {
+-            dout.writeUTF(s);
+-        }
+-        System.out.println("sent message: " + msg);
+-        String resp = din.readUTF();
+-        System.out.println("received response: " + resp);
+-    }
+-
+-    public void requestFile(DataInputStream din, DataOutputStream dout, String failinimi) throws IOException {
+-        dout.writeInt(1);
+-        dout.writeUTF(failinimi);
+-        System.out.println("Asked for file: " + failinimi);
+-        receiveFile(din, failinimi);
+-    }
+-
+-    public void receiveFile(DataInputStream din, String failinimi) throws IOException {
+-        int bytes = 0;
+-        int ok_status = din.readByte();
+-        if (ok_status == 6) {
+-            System.out.println("ERROR: no file found");
+-            return;
+-        } else if (ok_status == 7) {
+-            System.out.println("ERROR: absolute path was provided");
+-            return;
+-        } else if (ok_status == 5) {
+-            System.out.println("file received from server");
+-        } else {
+-            System.out.println("ERROR: unknown status " + ok_status);
+-            return;
+-        }
+-
+-        // try with resources
+-        try (FileOutputStream fos = new FileOutputStream(path + failinimi)) {
+-            long size = din.readLong();
+-            byte[] buffer = new byte[4 * 1024];
+-            while (size > 0 && (bytes = din.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+-                fos.write(buffer, 0, bytes);
+-                size -= bytes;
+-            }
+-            System.out.println("file saved");
+-        }
+-    } */
+-
+ }
+Index: epood/src/main/java/failisuhtlus/Toode.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package failisuhtlus;\r\n\r\nimport java.math.BigDecimal;\r\n\r\npublic class Toode {\r\n    private int number;\r\n    private String nimi;\r\n    private BigDecimal hind; // BigDecimal, sest double andis kahe hinna liitmisel ümardamise erroreid\r\n    private int lao_seis;\r\n\r\n    public Toode(int number, String nimi, BigDecimal hind, int lao_seis) {\r\n        this.number = number;\r\n        this.nimi = nimi;\r\n        this.hind = hind;\r\n        this.lao_seis = lao_seis;\r\n    }\r\n\r\n    public int getNumber() {\r\n        return number;\r\n    }\r\n\r\n    public String getNimi() {\r\n        return nimi;\r\n    }\r\n\r\n    public BigDecimal getHind() {\r\n        return hind;\r\n    }\r\n\r\n    public int getLao_seis() {\r\n        return lao_seis;\r\n    }\r\n\r\n    @Override\r\n    public String toString() {\r\n        return \"Toode{\" +\r\n                \"number=\" + number +\r\n                \", nimi='\" + nimi + '\\'' +\r\n                \", hind=\" + hind +\r\n                \", lao_seis=\" + lao_seis +\r\n                '}';\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/src/main/java/failisuhtlus/Toode.java b/epood/src/main/java/failisuhtlus/Toode.java
+--- a/epood/src/main/java/failisuhtlus/Toode.java	(revision c919c55d492cbd249975ba0cf341c950c2e2062b)
++++ b/epood/src/main/java/failisuhtlus/Toode.java	(date 1745672158477)
+@@ -5,16 +5,22 @@
+ public class Toode {
+     private int number;
+     private String nimi;
++    private String kategooria;
+     private BigDecimal hind; // BigDecimal, sest double andis kahe hinna liitmisel ümardamise erroreid
+     private int lao_seis;
+ 
+-    public Toode(int number, String nimi, BigDecimal hind, int lao_seis) {
++    public Toode(int number, String nimi, String kategooria, BigDecimal hind, int lao_seis) {
+         this.number = number;
+         this.nimi = nimi;
++        this.kategooria = kategooria;
+         this.hind = hind;
+         this.lao_seis = lao_seis;
+     }
+ 
++    public String getKategooria() {
++        return kategooria;
++    }
++
+     public int getNumber() {
+         return number;
+     }
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"b13b767d-aa6e-4f19-b987-096bb5d85783\" name=\"Changes\" comment=\"also did cartHandler like Oliver, but he was first, merge some parts if needed\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerClient.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerClient.java\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/klientideAndmebaas.json\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/klientideAndmebaas.json\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Interface\" />\r\n        <option value=\"Class\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Merge.Settings\">\r\n    <option name=\"BRANCH\" value=\"origin/oskar\" />\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"main\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\">{\r\n  &quot;lastFilter&quot;: {\r\n    &quot;state&quot;: &quot;OPEN&quot;,\r\n    &quot;assignee&quot;: &quot;oskarpau&quot;\r\n  }\r\n}</component>\r\n  <component name=\"GithubPullRequestsUISettings\">{\r\n  &quot;selectedUrlAndAccountId&quot;: {\r\n    &quot;url&quot;: &quot;https://github.com/oskarpau/Command-line_e-pood.git&quot;,\r\n    &quot;accountId&quot;: &quot;53924fdd-6a44-4c70-8330-c9331f4c889d&quot;\r\n  }\r\n}</component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 4\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2vM3FJqJRHIvOUgYRpH6oBKWQhU\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">{\r\n  &quot;keyToString&quot;: {\r\n    &quot;Application.Client.executor&quot;: &quot;Run&quot;,\r\n    &quot;Application.Server.executor&quot;: &quot;Run&quot;,\r\n    &quot;Maven.epood [clean].executor&quot;: &quot;Run&quot;,\r\n    &quot;Maven.epood [compile].executor&quot;: &quot;Run&quot;,\r\n    &quot;Maven.epood [install].executor&quot;: &quot;Run&quot;,\r\n    &quot;Maven.epood [validate].executor&quot;: &quot;Run&quot;,\r\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\r\n    &quot;SONARLINT_PRECOMMIT_ANALYSIS&quot;: &quot;true&quot;,\r\n    &quot;git-widget-placeholder&quot;: &quot;main&quot;,\r\n    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,\r\n    &quot;last_opened_file_path&quot;: &quot;C:/Command-line_e-pood&quot;,\r\n    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,\r\n    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,\r\n    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,\r\n    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,\r\n    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,\r\n    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.inline.completion&quot;,\r\n    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;\r\n  }\r\n}</component>\r\n  <component name=\"RecentsManager\">\r\n    <key name=\"MoveFile.RECENT_KEYS\">\r\n      <recent name=\"C:\\Command-line_e-pood\" />\r\n    </key>\r\n  </component>\r\n  <component name=\"RunManager\" selected=\"Application.Client\">\r\n    <configuration name=\"Client\" type=\"Application\" factoryName=\"Application\" temporary=\"true\" nameIsGenerated=\"true\">\r\n      <option name=\"MAIN_CLASS_NAME\" value=\"epood.Client\" />\r\n      <module name=\"epood\" />\r\n      <extension name=\"coverage\">\r\n        <pattern>\r\n          <option name=\"PATTERN\" value=\"epood.*\" />\r\n          <option name=\"ENABLED\" value=\"true\" />\r\n        </pattern>\r\n      </extension>\r\n      <method v=\"2\">\r\n        <option name=\"Make\" enabled=\"true\" />\r\n      </method>\r\n    </configuration>\r\n    <configuration name=\"Server\" type=\"Application\" factoryName=\"Application\" temporary=\"true\" nameIsGenerated=\"true\">\r\n      <option name=\"MAIN_CLASS_NAME\" value=\"epood.Server\" />\r\n      <module name=\"epood\" />\r\n      <extension name=\"coverage\">\r\n        <pattern>\r\n          <option name=\"PATTERN\" value=\"epood.*\" />\r\n          <option name=\"ENABLED\" value=\"true\" />\r\n        </pattern>\r\n      </extension>\r\n      <method v=\"2\">\r\n        <option name=\"Make\" enabled=\"true\" />\r\n      </method>\r\n    </configuration>\r\n    <recent_temporary>\r\n      <list>\r\n        <item itemvalue=\"Application.Client\" />\r\n        <item itemvalue=\"Application.Server\" />\r\n        <item itemvalue=\"Application.Server\" />\r\n        <item itemvalue=\"Application.Client\" />\r\n        <item itemvalue=\"Application.Server\" />\r\n      </list>\r\n    </recent_temporary>\r\n  </component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-jdk-9823dce3aa75-125ca727e0f0-intellij.indexing.shared.core-IU-243.23654.189\" />\r\n        <option value=\"bundled-js-predefined-d6986cc7102b-822845ee3bb5-JavaScript-IU-243.23654.189\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"b13b767d-aa6e-4f19-b987-096bb5d85783\" name=\"Changes\" comment=\"\" />\r\n      <created>1743941010291</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1743941010291</updated>\r\n      <workItem from=\"1743941011414\" duration=\"15930000\" />\r\n      <workItem from=\"1743957045043\" duration=\"110000\" />\r\n      <workItem from=\"1744103679036\" duration=\"68000\" />\r\n      <workItem from=\"1745149863466\" duration=\"11956000\" />\r\n      <workItem from=\"1745172139262\" duration=\"15528000\" />\r\n      <workItem from=\"1745263187675\" duration=\"1159000\" />\r\n      <workItem from=\"1745313474377\" duration=\"46000\" />\r\n      <workItem from=\"1745319721910\" duration=\"4203000\" />\r\n    </task>\r\n    <task id=\"LOCAL−00001\" summary=\"some minor fixes\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1743956339910</created>\r\n      <option name=\"number\" value=\"LOCAL−00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL−00001\" />\r\n      <updated>1743956339910</updated>\r\n    </task>\r\n    <task id=\"LOCAL−00002\" summary=\"merging\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1743956965656</created>\r\n      <option name=\"number\" value=\"LOCAL−00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL−00002\" />\r\n      <updated>1743956965656</updated>\r\n    </task>\r\n    <task id=\"LOCAL−00003\" summary=\"also did cartHandler like Oliver, but he was first, merge some parts if needed\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1745171019152</created>\r\n      <option name=\"number\" value=\"LOCAL−00003\" />\r\n      <option name=\"presentableId\" value=\"LOCAL−00003\" />\r\n      <updated>1745171019152</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"4\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"some minor fixes\" />\r\n    <MESSAGE value=\"merging\" />\r\n    <MESSAGE value=\"also did cartHandler like Oliver, but he was first, merge some parts if needed\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"also did cartHandler like Oliver, but he was first, merge some parts if needed\" />\r\n  </component>\r\n  <component name=\"XDebuggerManager\">\r\n    <breakpoint-manager>\r\n      <breakpoints>\r\n        <line-breakpoint enabled=\"true\" type=\"java-line\">\r\n          <url>file://$PROJECT_DIR$/epood/src/main/java/epood/Client.java</url>\r\n          <line>24</line>\r\n          <option name=\"timeStamp\" value=\"3\" />\r\n        </line-breakpoint>\r\n      </breakpoints>\r\n    </breakpoint-manager>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision c919c55d492cbd249975ba0cf341c950c2e2062b)
++++ b/.idea/workspace.xml	(date 1745672298712)
+@@ -5,10 +5,11 @@
+   </component>
+   <component name="ChangeListManager">
+     <list default="true" id="b13b767d-aa6e-4f19-b987-096bb5d85783" name="Changes" comment="also did cartHandler like Oliver, but he was first, merge some parts if needed">
++      <change afterPath="$PROJECT_DIR$/pubkey.der" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerClient.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/klientideAndmebaas.json" beforeDir="false" afterPath="$PROJECT_DIR$/klientideAndmebaas.json" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/Client.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/Client.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/Server.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/Server.java" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -42,8 +43,8 @@
+ }</component>
+   <component name="GithubPullRequestsUISettings">{
+   &quot;selectedUrlAndAccountId&quot;: {
+-    &quot;url&quot;: &quot;https://github.com/oskarpau/Command-line_e-pood.git&quot;,
+-    &quot;accountId&quot;: &quot;53924fdd-6a44-4c70-8330-c9331f4c889d&quot;
++    &quot;url&quot;: &quot;https://github.com/oskarpau/Command-line_e-pood&quot;,
++    &quot;accountId&quot;: &quot;cbd93ab1-42d2-4cf9-9699-d7940b6ba7ec&quot;
+   }
+ }</component>
+   <component name="ProjectColorInfo">{
+@@ -54,31 +55,36 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent">{
+-  &quot;keyToString&quot;: {
+-    &quot;Application.Client.executor&quot;: &quot;Run&quot;,
+-    &quot;Application.Server.executor&quot;: &quot;Run&quot;,
+-    &quot;Maven.epood [clean].executor&quot;: &quot;Run&quot;,
+-    &quot;Maven.epood [compile].executor&quot;: &quot;Run&quot;,
+-    &quot;Maven.epood [install].executor&quot;: &quot;Run&quot;,
+-    &quot;Maven.epood [validate].executor&quot;: &quot;Run&quot;,
+-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+-    &quot;SONARLINT_PRECOMMIT_ANALYSIS&quot;: &quot;true&quot;,
+-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+-    &quot;last_opened_file_path&quot;: &quot;C:/Command-line_e-pood&quot;,
+-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+-    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.inline.completion&quot;,
+-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
++  <component name="PropertiesComponent"><![CDATA[{
++  "keyToString": {
++    "Application.Client.executor": "Run",
++    "Application.Server.executor": "Run",
++    "Maven.epood [clean].executor": "Run",
++    "Maven.epood [compile].executor": "Run",
++    "Maven.epood [install].executor": "Run",
++    "Maven.epood [validate].executor": "Run",
++    "RunOnceActivity.ShowReadmeOnStart": "true",
++    "RunOnceActivity.git.unshallow": "true",
++    "SONARLINT_PRECOMMIT_ANALYSIS": "true",
++    "git-widget-placeholder": "main",
++    "ignore.virus.scanning.warn.message": "true",
++    "kotlin-language-version-configured": "true",
++    "last_opened_file_path": "C:/Users/oskar/OneDrive/Töölaud/Ülikool/oob/proov",
++    "node.js.detected.package.eslint": "true",
++    "node.js.detected.package.tslint": "true",
++    "node.js.selected.package.eslint": "(autodetect)",
++    "node.js.selected.package.tslint": "(autodetect)",
++    "nodejs_package_manager_path": "npm",
++    "project.structure.last.edited": "Project",
++    "project.structure.proportion": "0.15",
++    "project.structure.side.proportion": "0.2",
++    "settings.editor.selected.configurable": "editor.preferences.completion",
++    "vue.rearranger.settings.migration": "true"
+   }
+-}</component>
++}]]></component>
+   <component name="RecentsManager">
+     <key name="MoveFile.RECENT_KEYS">
++      <recent name="C:\Users\kustisam\IdeaProjects\oop\advanced\Command-line_e-pood\epood" />
+       <recent name="C:\Command-line_e-pood" />
+     </key>
+   </component>
+@@ -140,9 +146,14 @@
+       <workItem from="1744103679036" duration="68000" />
+       <workItem from="1745149863466" duration="11956000" />
+       <workItem from="1745172139262" duration="15528000" />
+-      <workItem from="1745263187675" duration="1159000" />
+-      <workItem from="1745313474377" duration="46000" />
+-      <workItem from="1745319721910" duration="4203000" />
++      <workItem from="1745263187675" duration="708000" />
++      <workItem from="1745316336982" duration="647000" />
++      <workItem from="1745357126665" duration="80000" />
++      <workItem from="1745655008870" duration="417000" />
++      <workItem from="1745655438777" duration="2048000" />
++      <workItem from="1745660526643" duration="3236000" />
++      <workItem from="1745667459070" duration="181000" />
++      <workItem from="1745667649090" duration="364000" />
+     </task>
+     <task id="LOCAL−00001" summary="some minor fixes">
+       <option name="closed" value="true" />
+@@ -182,8 +193,13 @@
+       <breakpoints>
+         <line-breakpoint enabled="true" type="java-line">
+           <url>file://$PROJECT_DIR$/epood/src/main/java/epood/Client.java</url>
+-          <line>24</line>
++          <line>36</line>
+           <option name="timeStamp" value="3" />
++        </line-breakpoint>
++        <line-breakpoint enabled="true" type="java-line">
++          <url>file://$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java</url>
++          <line>94</line>
++          <option name="timeStamp" value="5" />
+         </line-breakpoint>
+       </breakpoints>
+     </breakpoint-manager>
+Index: epood/.gitignore
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>target/\r\n!.mvn/wrapper/maven-wrapper.jar\r\n!**/src/main/**/target/\r\n!**/src/test/**/target/\r\n\r\n### IntelliJ IDEA ###\r\n.idea/modules.xml\r\n.idea/jarRepositories.xml\r\n.idea/compiler.xml\r\n.idea/libraries/\r\n*.iws\r\n*.iml\r\n*.ipr\r\n\r\n### Eclipse ###\r\n.apt_generated\r\n.classpath\r\n.factorypath\r\n.project\r\n.settings\r\n.springBeans\r\n.sts4-cache\r\n\r\n### NetBeans ###\r\n/nbproject/private/\r\n/nbbuild/\r\n/dist/\r\n/nbdist/\r\n/.nb-gradle/\r\nbuild/\r\n!**/src/main/**/build/\r\n!**/src/test/**/build/\r\n\r\n### VS Code ###\r\n.vscode/\r\n\r\n### Mac OS ###\r\n.DS_Store
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/epood/.gitignore b/epood/.gitignore
+--- a/epood/.gitignore	(revision c919c55d492cbd249975ba0cf341c950c2e2062b)
++++ b/epood/.gitignore	(date 1745672158471)
+@@ -8,6 +8,7 @@
+ .idea/jarRepositories.xml
+ .idea/compiler.xml
+ .idea/libraries/
++.idea
+ *.iws
+ *.iml
+ *.ipr
+@@ -35,4 +36,4 @@
+ .vscode/
+ 
+ ### Mac OS ###
+-.DS_Store
+\ No newline at end of file
++.DS_Store
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"ExternalStorageConfigurationManager\" enabled=\"true\" />\r\n  <component name=\"MavenProjectsManager\">\r\n    <option name=\"originalFiles\">\r\n      <list>\r\n        <option value=\"$PROJECT_DIR$/epood/pom.xml\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"ProjectRootManager\" version=\"2\" project-jdk-name=\"23\" project-jdk-type=\"JavaSDK\">\r\n    <output url=\"file://$PROJECT_DIR$/out\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision c919c55d492cbd249975ba0cf341c950c2e2062b)
++++ b/.idea/misc.xml	(date 1745672158469)
+@@ -8,7 +8,5 @@
+       </list>
+     </option>
+   </component>
+-  <component name="ProjectRootManager" version="2" project-jdk-name="23" project-jdk-type="JavaSDK">
+-    <output url="file://$PROJECT_DIR$/out" />
+-  </component>
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_23" project-jdk-name="corretto-23" project-jdk-type="JavaSDK" />
+ </project>
+\ No newline at end of file
+diff --git a/pubkey.der b/pubkey.der
+new file mode 100644
