@@ -34,8 +34,20 @@ public class JsonManagerClient {
 
     public void writeJson(ClientServerSide client) {
         lock.writeLock().lock();
-        try (FileWriter writer = new FileWriter(FILE_PATH)) {
-            gson.toJson(client, writer);
+        try {
+            // Loeme praegused kliendid
+            List<ClientServerSide> clients = readJson();
+            if (clients == null) {
+                clients = new ArrayList<>();
+            }
+
+            // lisame uue
+            clients.add(client);
+
+            // kirjutame faili
+            try (FileWriter writer = new FileWriter(FILE_PATH)) {
+                gson.toJson(clients, writer);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

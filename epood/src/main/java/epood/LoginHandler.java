@@ -11,9 +11,10 @@ import java.util.List;
 
 public class LoginHandler{
     static final byte CHOOSE_TYPE = 1;
-    static final byte ENTER_NAME = 2;
-    static final byte ENTER_EMAIL = 3;
-    static final byte ENTER_PASSWORD = 4;
+    static final byte ENTER_FORENAME = 2;
+    static final byte ENTER_SURNAME = 3;
+    static final byte ENTER_EMAIL = 4;
+    static final byte ENTER_PASSWORD = 5;
     static final byte CLIENT = 1;
     static final byte EMPLOYEE = 2;
     private String name;
@@ -35,9 +36,9 @@ public class LoginHandler{
             case CHOOSE_TYPE:
                 if (cmd.equals("klient")) {
                     context.type = CLIENT;
-                    currentSubScreen =  ENTER_NAME;
+                    currentSubScreen =  ENTER_FORENAME;
                     dout.writeInt(1);
-                    dout.writeUTF("Sisestage nimi: ");
+                    dout.writeUTF("Sisestage eesnimi: ");
                 } else if (cmd.equals("töötaja")) {
                     context.type = EMPLOYEE;
                     currentSubScreen =  ENTER_EMAIL;
@@ -47,8 +48,15 @@ public class LoginHandler{
                     dout.writeInt(1);
                     dout.writeUTF("Please enter valid type");
                 } break;
-            case ENTER_NAME:
+            case ENTER_FORENAME:
                 name = cmd;
+                currentSubScreen =  ENTER_SURNAME;
+                dout.writeInt(1);
+                dout.writeUTF("Sisestage perekonnanimi: ");
+                break;
+
+            case ENTER_SURNAME:
+                name += " " + cmd;
                 currentSubScreen =  ENTER_EMAIL;
                 dout.writeInt(1);
                 dout.writeUTF("Sisestage email: ");
