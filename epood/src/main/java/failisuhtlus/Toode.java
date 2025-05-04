@@ -31,6 +31,10 @@ public class Toode {
         return lao_seis;
     }
 
+    public void setLao_seis(int lao_seis) {
+        this.lao_seis = lao_seis;
+    }
+
     @Override
     public String toString() {
         return "Toode{" +

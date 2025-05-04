@@ -15,8 +15,6 @@ public class LoginHandler{
     static final byte ENTER_SURNAME = 3;
     static final byte ENTER_EMAIL = 4;
     static final byte ENTER_PASSWORD = 5;
-    static final byte CLIENT = 1;
-    static final byte EMPLOYEE = 2;
     private String name;
     private String email;
     private String password;
@@ -35,12 +33,12 @@ public class LoginHandler{
         switch (currentSubScreen) {
             case CHOOSE_TYPE:
                 if (cmd.equals("klient")) {
-                    context.type = CLIENT;
+                    context.type = Config.CLIENT;
                     currentSubScreen =  ENTER_FORENAME;
                     dout.writeInt(1);
                     dout.writeUTF("Sisestage eesnimi: ");
                 } else if (cmd.equals("töötaja")) {
-                    context.type = EMPLOYEE;
+                    context.type = Config.EMPLOYEE;
                     currentSubScreen =  ENTER_EMAIL;
                     dout.writeInt(1);
                     dout.writeUTF("Sisestage email: ");
@@ -64,7 +62,7 @@ public class LoginHandler{
             case ENTER_EMAIL:
                 if (EmailValidator.getInstance().isValid(cmd)) {
                     email = cmd;
-                    if (context.type == CLIENT) {
+                    if (context.type == Config.CLIENT) {
                         // vaatame, kas meil on juba selline klient olemas
                         List<ClientServerSide> clients = jsonManagerClient.readJson();
                         for (ClientServerSide c : clients) {
@@ -83,7 +81,7 @@ public class LoginHandler{
                         dout.writeUTF("Olete loonud kasutaja: " + name + " " + email +
                                 "\nKirjutage 'back', et minna peamenüüsse");
                         return;
-                    } else if (context.type == EMPLOYEE) {
+                    } else if (context.type == Config.EMPLOYEE) {
                         currentSubScreen =  ENTER_PASSWORD;
                         dout.writeInt(1);
                         dout.writeUTF("Sisestage parool: ");

@@ -1,0 +1,12 @@
+<changelist name="Uncommitted_changes_before_Update_at_26_04_2025_15_58_[Changes]" date="1745672334463" recycled="false" toDelete="true">
+  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2025_15_58_[Changes]/shelved.patch" />
+  <option name="DESCRIPTION" value="Uncommitted changes before Update at 26.04.2025 15:58 [Changes]" />
+  <binary>
+    <option name="AFTER_PATH" value="epood/truststore.p12" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2025_15_58_[Changes]/truststore.p12" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="epood/keystore.p12" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2025_15_58_[Changes]/keystore.p12" />
+  </binary>
+</changelist>

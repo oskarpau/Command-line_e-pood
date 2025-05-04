@@ -5,9 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b13b767d-aa6e-4f19-b987-096bb5d85783" name="Changes" comment="also did cartHandler like Oliver, but he was first, merge some parts if needed">
+      <change afterPath="$PROJECT_DIR$/epood/src/main/java/epood/Config.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_20_04_2025_20_41_[Changes]/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_20_04_2025_20_41__Changes_.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/andmebaas.json" beforeDir="false" afterPath="$PROJECT_DIR$/andmebaas.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/CatalogueHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/CatalogueHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/ClientHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/ClientHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/SearchHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/SearchHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/InventoryHandler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonReader.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonReader.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/Toode.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/Toode.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/klientideAndmebaas.json" beforeDir="false" afterPath="$PROJECT_DIR$/klientideAndmebaas.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -43,7 +52,7 @@
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
     "url": "https://github.com/oskarpau/Command-line_e-pood.git",
-    "accountId": "59c38f19-b100-491c-b582-35ace9206758"
+    "accountId": "53924fdd-6a44-4c70-8330-c9331f4c889d"
   }
 }]]></component>
   <component name="ProjectColorInfo">{
@@ -144,6 +153,7 @@
       <workItem from="1745313474377" duration="46000" />
       <workItem from="1745319721910" duration="4203000" />
       <workItem from="1745690031190" duration="4368000" />
+      <workItem from="1746345471975" duration="4466000" />
     </task>
     <task id="LOCAL−00001" summary="some minor fixes">
       <option name="closed" value="true" />

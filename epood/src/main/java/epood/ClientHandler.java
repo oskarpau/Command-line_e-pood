@@ -25,10 +25,7 @@ public class ClientHandler implements Runnable {
     private LoginHandler loginHandler;
     private HistoryEmployeeHandler historyEmployeeHandler;
     private HistoryClientHandler historyClientHandler;
-    private InventoryHandler inventoryHandler;
     private Ostukorv cart;
-    static final byte CLIENT = 1;
-    static final byte EMPLOYEE = 2;
     private Context context;
 
     public ClientHandler(Socket socket, Server server) {
@@ -41,7 +38,6 @@ public class ClientHandler implements Runnable {
         loginHandler = new LoginHandler();
         historyClientHandler = new HistoryClientHandler();
         historyEmployeeHandler = new HistoryEmployeeHandler();
-        inventoryHandler = new InventoryHandler();
         cart = new Ostukorv();
         context = new Context();
     }
@@ -121,7 +117,7 @@ public class ClientHandler implements Runnable {
                     case "echo" -> echo(dout, args);
                     case "help" -> help(dout);
                     case "catalogue" -> {
-                        catalogueHandler.show(dout);
+                        catalogueHandler.show(dout, context.type);
                         currentScreen = "catalogue";
                     }
                     case "search" -> {
@@ -130,27 +126,29 @@ public class ClientHandler implements Runnable {
                         currentScreen = "search";
                     }
                     case "cart" -> {
-                        cartHandler.show(dout);
-                        currentScreen = "cart";
+                        if (context.type == Config.CLIENT) {
+                            cartHandler.show(dout);
+                            currentScreen = "cart";
+                        } else if (context.type == Config.EMPLOYEE) {
+                            dout.writeInt(1);
+                            dout.writeUTF("invalid command, for common commands type: help");
+                        }
+
                     }
                     case "order" -> {
-                        orderHandler.show(dout);
-                        currentScreen = "order";
-                    }
-                    case "inventory" -> {
-                        if (context.type == EMPLOYEE) {
-                            InventoryHandler.show(dout);
-                            currentScreen = "inventory";
-                        } else if (context.type == CLIENT) {
+                        if (context.type == Config.CLIENT) {
+                            orderHandler.show(dout);
+                            currentScreen = "order";
+                        } else if (context.type == Config.EMPLOYEE) {
                             dout.writeInt(1);
                             dout.writeUTF("invalid command, for common commands type: help");
                         }
                     }
                     case "history" -> {
-                        if (context.type == EMPLOYEE) {
+                        if (context.type == Config.EMPLOYEE) {
                             historyEmployeeHandler.show(dout);
                             currentScreen = "history_employee";
-                        } else if (context.type == CLIENT) {
+                        } else if (context.type == Config.CLIENT) {
                             historyClientHandler.show(dout);
                             currentScreen = "history_client";
                         }
@@ -162,11 +160,10 @@ public class ClientHandler implements Runnable {
                 }
                 break;
 
-            case "catalogue": catalogueHandler.handler(dout, cmd, args, cart); break;
+            case "catalogue": catalogueHandler.handler(dout, cmd, args, cart, context.type); break;
             case "search": searchHandler.handler(dout, cmd, args, cart); break;
             case "cart": cartHandler.handler(dout, cmd, args, cart); break;
             case "order": orderHandler.handler(dout, cmd, args, cart); break;
-            case "inventory": InventoryHandler.handler(dout, cmd, args);break;
             case "history_employee": historyEmployeeHandler.handler(dout, cmd, args);break;
             case "history_client": historyClientHandler.handler(dout, cmd, args);break;
             default: {
@@ -178,12 +175,12 @@ public class ClientHandler implements Runnable {
     }
 
     private void showMain(DataOutputStream dout) throws IOException {
-        if (context.type == CLIENT) {
+        if (context.type == Config.CLIENT) {
             dout.writeInt(1);
             dout.writeUTF("Palun valige üks alljärgnevatest:\ncatalogue; search; cart; order; history; exit\nsisestage 'back', et naasta peamenüüsse");
-        } else if (context.type == EMPLOYEE) {
+        } else if (context.type == Config.EMPLOYEE) {
             dout.writeInt(1);
-            dout.writeUTF("Palun valige üks alljärgnevatest:\ncatalogue; search; cart; order; inventory; history; exit\nsisestage 'back', et naasta peamenüüsse");
+            dout.writeUTF("Palun valige üks alljärgnevatest:\ncatalogue; search; history; exit\nsisestage 'back', et naasta peamenüüsse");
         }
     }
 

@@ -35,6 +35,7 @@ public class JsonReader {
             }
             return tooted;
         } catch (NoSuchFileException e) {
+            System.out.println("FAILI EI LEITUD!! VÕTAME HARDCODED VÄÄRTUSED");
             Toode õun = new Toode(1, "õun", BigDecimal.valueOf(0.39), 54);
             Toode pirn = new Toode(2, "pirn", BigDecimal.valueOf(0.59), 32);
             List<Toode> tooted = new ArrayList<>();
@@ -62,6 +63,21 @@ public class JsonReader {
         tootedArray.put(toodeJson);
 
         updateJson(json);
+    }
+
+    public void muudaKogust(int tootenumber, int uusKogus) throws IOException {
+        JSONObject json = getJSON();
+
+        JSONArray tootedArray = json.getJSONArray("tooted");
+
+        for (int i = 0; i < tootedArray.length(); i++) {
+            JSONObject toode = tootedArray.getJSONObject(i);
+            if (toode.getInt("tootenumber") == tootenumber) {
+                tootedArray.getJSONObject(i).put("lao seis", uusKogus);
+                updateJson(json);
+                return;
+            }
+        }
     }
 
     private JSONObject getJSON() throws IOException {
