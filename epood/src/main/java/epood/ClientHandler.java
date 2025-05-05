@@ -27,6 +27,7 @@ public class ClientHandler implements Runnable {
     private HistoryClientHandler historyClientHandler;
     private Ostukorv cart;
     private Context context;
+    private ClientServerSide client;
 
     public ClientHandler(Socket socket, Server server) {
         this.socket = socket;
@@ -40,6 +41,8 @@ public class ClientHandler implements Runnable {
         historyEmployeeHandler = new HistoryEmployeeHandler();
         cart = new Ostukorv();
         context = new Context();
+
+        client = null;
     }
 
     public void run() {
@@ -111,7 +114,7 @@ public class ClientHandler implements Runnable {
         System.out.println(currentScreen);
         switch (currentScreen) {
             case "login":
-                loginHandler.handler(dout, cmd, args, cart, context); break;
+                client = loginHandler.handler(dout, cmd, args, context); break;
             case "main":
                 switch (cmd) {
                     case "echo" -> echo(dout, args);
@@ -160,7 +163,7 @@ public class ClientHandler implements Runnable {
                 }
                 break;
 
-            case "catalogue": catalogueHandler.handler(dout, cmd, args, cart, context.type); break;
+            case "catalogue": catalogueHandler.handler(dout, cmd, args, client, context.type); break;
             case "search": searchHandler.handler(dout, cmd, args, cart); break;
             case "cart": cartHandler.handler(dout, cmd, args, cart); break;
             case "order": orderHandler.handler(dout, cmd, args, cart); break;

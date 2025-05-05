@@ -1,5 +1,7 @@
 package failisuhtlus;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -8,11 +10,18 @@ import java.util.*;
  * Iga toode on seotud kogusega
  */
 public class Ostukorv {
+    @JsonProperty
     private static Map<Toode, Integer> tooted;
+
+    @JsonProperty
+    public static Map<Toode, Integer> getTooted() {
+        return tooted;
+    }
 
     public Ostukorv() {
         this.tooted = new HashMap<>();
     }
+
 
     /**
      * Lisab toote ostukorvi või kui on juba olemas, siis suurendab kogust

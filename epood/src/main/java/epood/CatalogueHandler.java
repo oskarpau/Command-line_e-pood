@@ -1,9 +1,6 @@
 package epood;
 
-import failisuhtlus.JsonManagerEmployee;
-import failisuhtlus.Ostukorv;
-import failisuhtlus.Toode;
-import failisuhtlus.JsonReader;
+import failisuhtlus.*;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -19,14 +16,19 @@ public class CatalogueHandler {
     // peaks olema tegelikult kõikide klientide peale ainult 1 reader, aga panin hetkel siia, et debugida
     private final JsonReader jsonReader = new JsonReader("andmebaas.json");
 
+    private JsonManagerClient jsonManagerClient;
+    private JsonManagerEmployee jsonManagerEmployee;
+
     public CatalogueHandler() {
+        this.jsonManagerEmployee = new JsonManagerEmployee();
+        this.jsonManagerClient = new JsonManagerClient();
     }
 
     public void show(DataOutputStream dout, Byte type) throws IOException {
         showAll(dout, type);
     }
 
-    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart, Byte type) throws IOException {
+    public void handler(DataOutputStream dout, String cmd, String[] args, ClientServerSide client, Byte type) throws IOException {
         if (currentSubScreen == SELECT_PRODUCT) {
             if (jsonReader.getTooted().stream()
                 .anyMatch(t -> cmd.equalsIgnoreCase(t.getNimi()))) {
@@ -55,7 +57,7 @@ public class CatalogueHandler {
                 // vaatame, kui palju meil antud toodet juba ostukorvis on
                 Toode inCart = null;
                 Integer quantityInCart = 0;
-                for (Map.Entry<Toode, Integer> entry : cart.getItems().entrySet()) {
+                for (Map.Entry<Toode, Integer> entry : client.getCart().getItems().entrySet()) {
                     String name = entry.getKey().getNimi();
                     if (name.equals(toode.getNimi())) {
                         quantityInCart = entry.getValue();
@@ -67,7 +69,9 @@ public class CatalogueHandler {
                         dout.writeInt(1);
                         dout.writeUTF("Please enter positive quantity.\nNo product added to the cart.");
                     } else {
-                        cart.addToode(toode, quantity);
+                        System.out.println(client);
+                        System.out.println(client.getCart());
+                        client.addToode(toode, quantity, jsonManagerClient);
                         showAll(dout, type);
                     }
                     currentSubScreen = SELECT_PRODUCT;

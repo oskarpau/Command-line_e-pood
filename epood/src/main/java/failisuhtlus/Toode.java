@@ -1,5 +1,7 @@
 package failisuhtlus;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 
 public class Toode {
@@ -8,25 +10,27 @@ public class Toode {
     private BigDecimal hind; // BigDecimal, sest double andis kahe hinna liitmisel ümardamise erroreid
     private int lao_seis;
 
+    public Toode() {};
+
     public Toode(int number, String nimi, BigDecimal hind, int lao_seis) {
         this.number = number;
         this.nimi = nimi;
         this.hind = hind;
         this.lao_seis = lao_seis;
     }
-
+    @JsonProperty
     public int getNumber() {
         return number;
     }
-
+    @JsonProperty
     public String getNimi() {
         return nimi;
     }
-
+    @JsonProperty
     public BigDecimal getHind() {
         return hind;
     }
-
+    @JsonProperty
     public int getLao_seis() {
         return lao_seis;
     }

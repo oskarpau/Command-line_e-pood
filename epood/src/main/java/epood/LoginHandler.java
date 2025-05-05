@@ -29,7 +29,8 @@ public class LoginHandler{
     }
 
 
-    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv cart, Context context) throws IOException {
+    public ClientServerSide handler(DataOutputStream dout, String cmd, String[] args, Context context) throws IOException {
+        ClientServerSide client = null;
         switch (currentSubScreen) {
             case CHOOSE_TYPE:
                 if (cmd.equals("klient")) {
@@ -67,20 +68,24 @@ public class LoginHandler{
                         List<ClientServerSide> clients = jsonManagerClient.readJson();
                         for (ClientServerSide c : clients) {
                             if (c.checkMatch(name, email)) {
-                                context.client = c; // peaksime client objektiga edasi tegeleme, et tellimus koos sellega vormistada
+                                /*if (c.getCart().getItems().isEmpty()) {
+                                    client = new ClientServerSide(c.getName(), c.getEmail(), c.getCart()); // peaksime client objektiga edasi tegeleme, et tellimus koos sellega vormistada
+                                } else {
+                                    client = new ClientServerSide(c.getName(), c.getEmail());
+                                }*/
                                 dout.writeInt(1);
-                                dout.writeUTF("Tere tulemast tagasi " + name + " " + email +
-                                        "\nKirjutage 'back', et minna peamenüüsse");
-                                return;
+                                dout.writeUTF("Tere tulemast tagasi " + c.getName() + " " + c.getCart() +
+                                        "\nKirjutage 'back', et minna peamenüüsse"); // Võtame salvestatud kliendi väärtused,
+                                // sest kui uuesti sisselogimisel tehti nimes kirjaviga, siis kuvatakse ikka esialgne
+                                return c;
                             }
                         }
                         ClientServerSide newClient = new ClientServerSide(name, email);
                         jsonManagerClient.writeJson(newClient);
-                        context.client = newClient; // peaksime client objektiga edasi tegeleme, et tellimus koos sellega vormistada
                         dout.writeInt(1);
                         dout.writeUTF("Olete loonud kasutaja: " + name + " " + email +
                                 "\nKirjutage 'back', et minna peamenüüsse");
-                        return;
+                        return newClient;
                     } else if (context.type == Config.EMPLOYEE) {
                         currentSubScreen =  ENTER_PASSWORD;
                         dout.writeInt(1);
@@ -109,13 +114,16 @@ public class LoginHandler{
                         dout.writeInt(1);
                         dout.writeUTF("Olete edukalt sisseloginud (email: " + email + ")" +
                                 "\nKirjutage 'back', et minna peamenüüsse");
-                        return;
+                        return client;
                     }
                 }
                 currentSubScreen = ENTER_EMAIL;
                 dout.writeInt(1);
                 dout.writeUTF("Selliste andmetega töötajat ei leitud.\nSisestage email:");
                 break;
+
         }
+        return client;
     }
+
 }
