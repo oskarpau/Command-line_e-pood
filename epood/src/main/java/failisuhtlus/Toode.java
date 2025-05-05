@@ -35,6 +35,18 @@ public class Toode {
         this.lao_seis = lao_seis;
     }
 
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
+    public void setNimi(String nimi) {
+        this.nimi = nimi;
+    }
+
+    public void setHind(BigDecimal hind) {
+        this.hind = hind;
+    }
+
     @Override
     public String toString() {
         return "Toode{" +

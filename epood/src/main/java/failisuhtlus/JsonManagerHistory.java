@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 public class JsonManagerHistory {
-    private static final String fail = "ostudeAjalugu.json";
+    private static final String FAIL = "ostudeAjalugu.json";
 
     public List<Tellimus> getTellimused() throws IOException {
 
@@ -71,7 +71,7 @@ public class JsonManagerHistory {
     }
 
     private void updateJson(JSONObject json) throws IOException {
-        try (FileWriter fileWriter = new FileWriter(fail)) {
+        try (FileWriter fileWriter = new FileWriter(FAIL)) {
             fileWriter.write(json.toString());
         }
     }
