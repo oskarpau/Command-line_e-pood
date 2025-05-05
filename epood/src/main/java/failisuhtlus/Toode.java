@@ -3,6 +3,7 @@ package failisuhtlus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 public class Toode {
     private int number;
@@ -10,7 +11,10 @@ public class Toode {
     private BigDecimal hind; // BigDecimal, sest double andis kahe hinna liitmisel ümardamise erroreid
     private int lao_seis;
 
-    public Toode() {};
+    /**
+     * Vajalik Jacksoni jaoks
+     */
+    public Toode() {}
 
     public Toode(int number, String nimi, BigDecimal hind, int lao_seis) {
         this.number = number;
@@ -49,6 +53,29 @@ public class Toode {
 
     public void setHind(BigDecimal hind) {
         this.hind = hind;
+    }
+
+    /**
+     * Jacksoni jaoks
+     * @param o
+     * @return
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true; // sama pointer
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Toode toode = (Toode) o;
+        return Objects.equals(number, toode.number);
+    }
+
+    /**
+     * Jacksoni jaoks
+     * @return
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(number);
     }
 
     @Override

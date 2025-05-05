@@ -1,5 +1,7 @@
 package failisuhtlus;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
@@ -11,17 +13,15 @@ import java.util.*;
  */
 public class Ostukorv {
     @JsonProperty
-    private static Map<Toode, Integer> tooted;
+    private Map<Toode, Integer> tooted;
 
-    @JsonProperty
-    public static Map<Toode, Integer> getTooted() {
+    public Map<Toode, Integer> getTooted() {
         return tooted;
     }
 
     public Ostukorv() {
         this.tooted = new HashMap<>();
     }
-
 
     /**
      * Lisab toote ostukorvi või kui on juba olemas, siis suurendab kogust
@@ -51,7 +51,8 @@ public class Ostukorv {
      * Tagastab kogu ostukorvi, mis hetkel seal on
      * @return tagastab ostukorvis olevate toodete nimede ja koguste mapi
      */
-    public static Map<Toode, Integer> getItems() {
+    @JsonIgnore
+    public Map<Toode, Integer> getItems() {
         return tooted;
     }
 
@@ -59,7 +60,8 @@ public class Ostukorv {
      * Arvutab kogu ostukorvi hinna
      * @return tagastab BigDecimal tüüpi kogusumma
      */
-    public static BigDecimal getKoguHind() {
+    @JsonIgnore
+    public BigDecimal getKoguHind() {
         BigDecimal total = BigDecimal.valueOf(0.0);
         for (Map.Entry<Toode, Integer> entry : tooted.entrySet()) {
             total = total.add(entry.getKey().getHind().multiply(BigDecimal.valueOf(entry.getValue())));
@@ -70,7 +72,7 @@ public class Ostukorv {
     /**
      * Prindib ostukorvi sisu ja info
      */
-    public static void printOstukorv() {
+    public void printOstukorv() {
         if (tooted.isEmpty()) {
             System.out.println("Ostukorv on tühi.");
         } else {
@@ -81,5 +83,16 @@ public class Ostukorv {
             }
             System.out.println("Kokku: " + getKoguHind() + " EUR");
         }
+    }
+
+    /**
+     * Kiiresti debugimiseks, et saaks .sout-i kasutada
+     * @return
+     */
+    @Override
+    public String toString() {
+        return "Ostukorv{" +
+                "tooted=" + tooted +
+                '}';
     }
 }

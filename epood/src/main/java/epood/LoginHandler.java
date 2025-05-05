@@ -81,7 +81,7 @@ public class LoginHandler{
                             }
                         }
                         ClientServerSide newClient = new ClientServerSide(name, email);
-                        jsonManagerClient.writeJson(newClient);
+                        jsonManagerClient.addClientJson(newClient);
                         dout.writeInt(1);
                         dout.writeUTF("Olete loonud kasutaja: " + name + " " + email +
                                 "\nKirjutage 'back', et minna peamenüüsse");

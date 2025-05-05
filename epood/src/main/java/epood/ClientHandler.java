@@ -130,7 +130,7 @@ public class ClientHandler implements Runnable {
                     }
                     case "cart" -> {
                         if (context.type == Config.CLIENT) {
-                            cartHandler.show(dout);
+                            cartHandler.show(dout, client.getCart());
                             currentScreen = "cart";
                         } else if (context.type == Config.EMPLOYEE) {
                             dout.writeInt(1);
@@ -165,7 +165,7 @@ public class ClientHandler implements Runnable {
 
             case "catalogue": catalogueHandler.handler(dout, cmd, args, client, context.type); break;
             case "search": searchHandler.handler(dout, cmd, args, cart); break;
-            case "cart": cartHandler.handler(dout, cmd, args, cart); break;
+            case "cart": cartHandler.handler(dout, cmd, args, client.getCart(), client); break;
             case "order": orderHandler.handler(dout, cmd, args, cart); break;
             case "history_employee": historyEmployeeHandler.handler(dout, cmd, args);break;
             case "history_client": historyClientHandler.handler(dout, cmd, args);break;

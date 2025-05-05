@@ -1,4 +1,25 @@
 [ {
-  "name" : "mari maasikas",
-  "email" : "mari@gmail.com",
-  "cart"
+  "name" : "a b",
+  "email" : "ab@gmail.com",
+  "cart" : {
+    "tooted" : {
+      "1|õun|0.39|56" : 10
+    }
+  }
+}, {
+  "name" : "c d",
+  "email" : "cd@cd.com",
+  "cart" : {
+    "tooted" : {
+      "1|õun|0.39|56" : 54
+    }
+  }
+}, {
+  "name" : "e f",
+  "email" : "ef@gmail.com",
+  "cart" : {
+    "tooted" : {
+      "1|õun|0.39|56" : 10
+    }
+  }
+} ]

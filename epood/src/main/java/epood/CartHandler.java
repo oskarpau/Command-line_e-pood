@@ -1,5 +1,6 @@
 package epood;
 
+import failisuhtlus.JsonManagerClient;
 import failisuhtlus.Ostukorv;
 import failisuhtlus.Toode;
 
@@ -14,12 +15,15 @@ import java.util.regex.Pattern;
  * Vastutab ostukorvi sisu kuvamise, toodete koguste muutmise,
  * toodete eemaldamise ja ostukorvi tühjendamise eest.
  */
-public class CartHandler implements Screen {
+public class CartHandler {
     /** Jälgib praegust alamekraani olekut ostukorvi liideses */
     private String currentSubScreen = "view";
 
     /** Salvestab toote, mille kogust muudetakse */
     private Toode productToUpdate;
+
+    /** Kasutaja ostukorvi salvestamiseks */
+    private final JsonManagerClient jsonManagerClient = new JsonManagerClient();
 
     /**
      * Kuvab ostukorvi sisu ja saadaval olevad tegevused kasutajale.
@@ -27,9 +31,9 @@ public class CartHandler implements Screen {
      * @param dout DataOutputStream kliendile andmete saatmiseks
      * @throws IOException kui väljundvoolu kirjutamisel tekib viga
      */
-    public void show(DataOutputStream dout) throws IOException {
+    public void show(DataOutputStream dout, Ostukorv korv) throws IOException {
         // Kuvab ostukorvi sisu ilma täiendava sõnumita
-        displayCart(dout, null);
+        displayCart(dout, null, korv);
     }
 
     /**
@@ -41,24 +45,24 @@ public class CartHandler implements Screen {
      * @param korv Kasutaja ostukorv
      * @throws IOException kui väljundi kirjutamisel tekib viga
      */
-    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv korv) throws IOException {
+    public void handler(DataOutputStream dout, String cmd, String[] args, Ostukorv korv, ClientServerSide client) throws IOException {
         switch (currentSubScreen) {
             case "view":
-                handleViewCommands(dout, cmd, args, korv);
+                handleViewCommands(dout, cmd, args, korv, client);
                 break;
             case "remove":
-                handleRemoveProduct(dout, cmd, korv);
+                handleRemoveProduct(dout, cmd, korv, client);
                 break;
             case "update_select":
                 handleUpdateProductSelection(dout, cmd, korv);
                 break;
             case "update_quantity":
-                handleUpdateQuantity(dout, cmd, korv);
+                handleUpdateQuantity(dout, cmd, korv, client);
                 break;
             default:
                 // Tundmatu oleku korral lähtestame põhivaatele
                 currentSubScreen = "view";
-                displayCart(dout, "Tundmatu ostukorvi olek. Tagasi põhivaatesse.");
+                displayCart(dout, "Tundmatu ostukorvi olek. Tagasi põhivaatesse.", korv);
         }
     }
 
@@ -71,11 +75,11 @@ public class CartHandler implements Screen {
      * @param korv Kasutaja ostukorv
      * @throws IOException kui väljundvoolu kirjutamisel tekib viga
      */
-    private void handleViewCommands(DataOutputStream dout, String cmd, String[] args, Ostukorv korv) throws IOException {
+    private void handleViewCommands(DataOutputStream dout, String cmd, String[] args, Ostukorv korv, ClientServerSide client) throws IOException {
         switch (cmd.toLowerCase()) {
             case "update":
                 if (korv.getItems().isEmpty()) {
-                    displayCart(dout, "Ostukorv on tühi. Pole midagi muuta.");
+                    displayCart(dout, "Ostukorv on tühi. Pole midagi muuta.", korv);
                 } else {
                     currentSubScreen = "update_select";
                     dout.writeInt(1);
@@ -84,7 +88,7 @@ public class CartHandler implements Screen {
                 break;
             case "remove":
                 if (korv.getItems().isEmpty()) {
-                    displayCart(dout, "Ostukorv on tühi. Pole midagi eemaldada.");
+                    displayCart(dout, "Ostukorv on tühi. Pole midagi eemaldada.", korv);
                 } else {
                     currentSubScreen = "remove";
                     dout.writeInt(1);
@@ -93,11 +97,12 @@ public class CartHandler implements Screen {
                 break;
             case "clear":
                 korv.tyhjendaOstukorv();
-                displayCart(dout, "Ostukorv on tühjendatud.");
+                jsonManagerClient.updateCartJson(client);
+                displayCart(dout, "Ostukorv on tühjendatud.", korv);
                 break;
             case "checkout":
                 if (korv.getItems().isEmpty()) {
-                    displayCart(dout, "Ostukorv on tühi. Lisa kõigepealt tooteid!");
+                    displayCart(dout, "Ostukorv on tühi. Lisa kõigepealt tooteid!", korv);
                 } else {
                     // Tellimuse ekraanile liikumise signaal - käideldakse ClientHandleris
                     dout.writeInt(1);
@@ -105,7 +110,7 @@ public class CartHandler implements Screen {
                 }
                 break;
             default:
-                displayCart(dout, "Käsud: update, remove, clear, checkout");
+                displayCart(dout, "Käsud: update, remove, clear, checkout", korv);
         }
     }
 
@@ -117,14 +122,15 @@ public class CartHandler implements Screen {
      * @param cart Kasutaja ostukorv
      * @throws IOException kui väljundvoolu kirjutamisel tekib viga
      */
-    private void handleRemoveProduct(DataOutputStream dout, String productName, Ostukorv cart) throws IOException {
+    private void handleRemoveProduct(DataOutputStream dout, String productName, Ostukorv cart, ClientServerSide client) throws IOException {
         Toode productToRemove = findProductInCart(cart, productName);
 
         if (productToRemove != null) {
             cart.removeToode(productToRemove);
-            displayCart(dout, "\"" + productName + "\" eemaldatud ostukorvist.");
+            jsonManagerClient.updateCartJson(client);
+            displayCart(dout, "\"" + productName + "\" eemaldatud ostukorvist.", cart);
         } else {
-            displayCart(dout, "Toodet \"" + productName + "\" ei leitud ostukorvist.");
+            displayCart(dout, "Toodet \"" + productName + "\" ei leitud ostukorvist.", cart);
         }
 
         // Tagasi ostukorvi põhivaatesse
@@ -157,7 +163,7 @@ public class CartHandler implements Screen {
             dout.writeUTF("Praegune kogus: " + currentQuantity + "\n" +
                     "Sisesta uus kogus tootele \"" + productName + "\": ");
         } else {
-            displayCart(dout, "Toodet \"" + productName + "\" ei leitud ostukorvist.");
+            displayCart(dout, "Toodet \"" + productName + "\" ei leitud ostukorvist.", korv);
             currentSubScreen = "view";
         }
     }
@@ -170,14 +176,15 @@ public class CartHandler implements Screen {
      * @param korv Kasutaja ostukorv
      * @throws IOException kui väljundvoolu kirjutamisel tekib viga
      */
-    private void handleUpdateQuantity(DataOutputStream dout, String quantityStr, Ostukorv korv) throws IOException {
+    private void handleUpdateQuantity(DataOutputStream dout, String quantityStr, Ostukorv korv, ClientServerSide client) throws IOException {
         try {
             int newQuantity = Integer.parseInt(quantityStr);
 
             if (newQuantity <= 0) {
                 // Kui kogus on 0 või negatiivne, eemaldame toote
                 korv.removeToode(productToUpdate);
-                displayCart(dout, "Toode eemaldatud ostukorvist, kuna uus kogus oli " + newQuantity + ".");
+                jsonManagerClient.updateCartJson(client);
+                displayCart(dout, "Toode eemaldatud ostukorvist, kuna uus kogus oli " + newQuantity + ".", korv);
             } else {
                 // Kontrollime, kas laos on piisavalt
                 if (productToUpdate.getLao_seis() >= newQuantity) {
@@ -185,10 +192,11 @@ public class CartHandler implements Screen {
                     korv.removeToode(productToUpdate);
                     // Seejärel lisame uue kogusega
                     korv.addToode(productToUpdate, newQuantity);
-                    displayCart(dout, "Toote \"" + productToUpdate.getNimi() + "\" kogus muudetud: " + newQuantity + ".");
+                    jsonManagerClient.updateCartJson(client);
+                    displayCart(dout, "Toote \"" + productToUpdate.getNimi() + "\" kogus muudetud: " + newQuantity + ".", korv);
                 } else {
                     displayCart(dout, "Viga: laos on ainult " + productToUpdate.getLao_seis() +
-                            " toodet. Palun valige väiksem kogus.");
+                            " toodet. Palun valige väiksem kogus.", korv);
                 }
             }
         } catch (NumberFormatException e) {
@@ -225,7 +233,7 @@ public class CartHandler implements Screen {
      * @param message Lisasõnum, mis kuvatakse (võib olla null)
      * @throws IOException kui väljundvoolu kirjutamisel tekib viga
      */
-    private void displayCart(DataOutputStream dout, String message) throws IOException {
+    private void displayCart(DataOutputStream dout, String message, Ostukorv korv) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append("----- OSTUKORV -----\n");
 
@@ -233,7 +241,7 @@ public class CartHandler implements Screen {
             sb.append(message).append("\n\n");
         }
 
-        Map<Toode, Integer> items = Ostukorv.getItems();
+        Map<Toode, Integer> items = korv.getItems();
         if (items.isEmpty()) {
             sb.append("Ostukorv on tühi.\n");
         } else {
@@ -246,7 +254,7 @@ public class CartHandler implements Screen {
                 sb.append(String.format("%s x%d = %.2f EUR\n",
                         product.getNimi(), quantity, itemTotal));
             }
-            sb.append(String.format("\nKokku: %.2f EUR\n", Ostukorv.getKoguHind()));
+            sb.append(String.format("\nKokku: %.2f EUR\n", korv.getKoguHind()));
         }
 
         sb.append("\nSaadaval käsud: update (muuda kogust), remove (eemalda toode), clear (tühjenda ostukorv), checkout (vormista tellimus)");

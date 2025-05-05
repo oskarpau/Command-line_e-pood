@@ -49,6 +49,15 @@ public class ClientServerSide {
         return name;
     }
 
+    @Override
+    public String toString() {
+        return "ClientServerSide{" +
+                "name='" + name + '\'' +
+                ", email='" + email + '\'' +
+                ", cart=" + cart +
+                '}';
+    }
+
     public void setName(String name) {
         this.name = name;
     }
