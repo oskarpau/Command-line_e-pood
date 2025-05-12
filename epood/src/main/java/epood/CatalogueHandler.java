@@ -40,8 +40,14 @@ public class CatalogueHandler {
                 // Küsime mitu tükki soovib kasutaja antud toodet osta
                 dout.writeInt(1);
                 if (type == Config.CLIENT) {
-                    dout.writeUTF("Enter quantity: ");
-                    currentSubScreen = SELECT_QUANTITY;
+                    if (toode.getLao_seis() <= 0) {
+                        dout.writeUTF("Kahjuks on antud toode otsas");
+                        showAll(dout, type);
+                    } else {
+                        dout.writeUTF("Enter quantity: ");
+                        currentSubScreen = SELECT_QUANTITY;
+                    }
+
                 } else if (type == Config.EMPLOYEE) {
                     dout.writeUTF("Enter new quantity: ");
                     currentSubScreen = CHANGE_QUANTITY;
@@ -95,7 +101,7 @@ public class CatalogueHandler {
                 }
                 // muudame kogust failis
                 // teeme praegu nii, et kui muudame koguses 0-ks, siis jääb toode ikka alles, et ei peaks arenduse käigus
-                // iga kord hakkama uut toodet lisama, kui varem sai toode kustutatud
+                // iga kord hakkama uut toodet lisama, kui kasutuse käigus sai toode kustutatud
                 jsonReader.muudaKogust(toode.getNumber(), quantity);
                 showAll(dout, type);
             }

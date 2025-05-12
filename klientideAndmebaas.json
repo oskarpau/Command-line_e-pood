@@ -2,33 +2,7 @@
   "name" : "a b",
   "email" : "ab@gmail.com",
   "cart" : {
-    "tooted" : {
-      "1|õun|0.39|56" : 10,
-      "2|pirn|0.59|32" : 2
-    }
-  }
-}, {
-  "name" : "c d",
-  "email" : "cd@cd.com",
-  "cart" : {
-    "tooted" : {
-      "1|õun|0.39|56" : 54
-    }
-  }
-}, {
-  "name" : "e f",
-  "email" : "ef@gmail.com",
-  "cart" : {
-    "tooted" : {
-      "1|õun|0.39|56" : 10
-    }
-  }
-}, {
-  "name" : "Mari Maasikas",
-  "email" : "marimaasikas@gmail.com",
-  "cart" : {
-    "tooted" : {
-      "1|õun|0.39|54" : 52
-    }
-  }
+    "tooted" : { }
+  },
+  "id" : "a451f687-de2f-45d7-b2e4-d4bdd7ab145e"
 } ]

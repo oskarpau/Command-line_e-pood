@@ -78,9 +78,9 @@ public class JsonManagerClient {
             List<ClientServerSide> clients = readJson();
             List<ClientServerSide> updatedClients = new ArrayList<>();
 
-            // clientide listi lisame uuendatud või uue kliendi ja kõik ülejäänud vanad kliendid
+            // lisame uuendatud clienti clientide listi
             for (ClientServerSide existingClient : clients) {
-                if (existingClient.checkMatch(updatedClient.getName(), updatedClient.getEmail())) {
+                if (existingClient.getId().equals(updatedClient.getId())) {
                     updatedClients.add(updatedClient);
                 } else {
                     updatedClients.add(existingClient);

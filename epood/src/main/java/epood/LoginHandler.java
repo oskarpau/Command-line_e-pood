@@ -77,7 +77,7 @@ public class LoginHandler{
                                 dout.writeUTF("Tere tulemast tagasi " + c.getName() + " " + c.getCart() +
                                         "\nKirjutage 'back', et minna peamenüüsse"); // Võtame salvestatud kliendi väärtused,
                                 // sest kui uuesti sisselogimisel tehti nimes kirjaviga, siis kuvatakse ikka esialgne
-                                return c;
+                                return c; // tagastame juba registeeritud kliendi objekti
                             }
                         }
                         ClientServerSide newClient = new ClientServerSide(name, email);

@@ -1,35 +1,11 @@
 [ {
-  "nimi" : "Mari Maasikas",
-  "email" : "marimaasikas@gmail.com",
-  "ostukorv" : {
-    "tooted" : {
-      "1|õun|0.39|56" : 2
-    }
-  }
-}, {
   "nimi" : "a b",
   "email" : "ab@gmail.com",
+  "kliendiID" : "a451f687-de2f-45d7-b2e4-d4bdd7ab145e",
+  "tellimuseID" : "32b5cd33-a999-456a-8323-d97a902037a2",
   "ostukorv" : {
     "tooted" : {
-      "1|õun|0.39|56" : 10
-    }
-  }
-}, {
-  "nimi" : "a b",
-  "email" : "ab@gmail.com",
-  "ostukorv" : {
-    "tooted" : {
-      "1|õun|0.39|56" : 10,
-      "2|pirn|0.59|32" : 2
-    }
-  }
-}, {
-  "nimi" : "a b",
-  "email" : "ab@gmail.com",
-  "ostukorv" : {
-    "tooted" : {
-      "1|õun|0.39|56" : 10,
-      "2|pirn|0.59|32" : 2
+      "1|õun|0.39|5" : 5
     }
   }
 } ]

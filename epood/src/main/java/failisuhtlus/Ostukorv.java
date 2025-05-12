@@ -70,6 +70,15 @@ public class Ostukorv {
     }
 
     /**
+     * Toote koguse vähendamiseks
+     * @param toode
+     * @param kogus
+     */
+    public void addLowerQuantity(Toode toode, int kogus) {
+        tooted.put(toode, kogus);
+    }
+
+    /**
      * Prindib ostukorvi sisu ja info
      */
     public void printOstukorv() {
