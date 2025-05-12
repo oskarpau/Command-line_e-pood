@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
@@ -96,6 +97,14 @@ public class JsonManagerClient {
             lock.writeLock().unlock();
             objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, true);
         }
+    }
+
+    public ClientServerSide getClientByEmail(String email) throws IOException {
+        List<ClientServerSide> clients = readJson();
+        Optional<ClientServerSide> result = clients.stream()
+                .filter(r -> r.getEmail().equals(email))
+                .findFirst();
+        return result.get();
     }
 
 }

@@ -25,19 +25,17 @@ public class JsonManagerEmployee {
             List<EmployeeServerSide> result = gson.fromJson(reader, employeeListType);
             return result != null ? result : new ArrayList<>();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Töötajaid ei ole veel!");
             return null;
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    public void writeJson(EmployeeServerSide client) {
+    public void writeJson(EmployeeServerSide client) throws IOException {
         lock.writeLock().lock();
         try (FileWriter writer = new FileWriter(FILE_PATH)) {
             gson.toJson(client, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
         } finally {
             lock.writeLock().unlock();
         }

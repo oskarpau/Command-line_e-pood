@@ -2,7 +2,26 @@
   "name" : "a b",
   "email" : "ab@gmail.com",
   "cart" : {
+    "tooted" : {
+      "2|pirn|0.59|18" : 10
+    }
+  },
+  "id" : "5676ad5a-5d79-47ad-b3a8-6582748d3384",
+  "password" : "$argon2id$v=19$m=65536,t=3,p=1$G6xwoQHERW0B4vojFeChbw$SKHBGRfwp1ATq8HPQURYvw"
+}, {
+  "name" : "c d",
+  "email" : "cd@gmail.com",
+  "cart" : {
     "tooted" : { }
   },
-  "id" : "a451f687-de2f-45d7-b2e4-d4bdd7ab145e"
+  "id" : "9e0efaab-bbe8-4cba-af23-e3b147653d97",
+  "password" : "$argon2id$v=19$m=65536,t=3,p=1$2G6uFjBJiCz7ZXSPO/Srdg$gOLJ6cdnexpMSxv3WzE2Zw"
+}, {
+  "name" : "e f",
+  "email" : "ef@gmail.com",
+  "cart" : {
+    "tooted" : { }
+  },
+  "id" : "3c29d169-3edf-4067-9b90-83d39b663e68",
+  "password" : "$argon2id$v=19$m=65536,t=3,p=1$VqQvupQ5s7B2WJPp471GPw$QZwYordThcCeEA+8hERpzg"
 } ]

@@ -6,11 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="b13b767d-aa6e-4f19-b987-096bb5d85783" name="Changes" comment="also did cartHandler like Oliver, but he was first, merge some parts if needed">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/CartHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/CartHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/ClientHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/ClientHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/HistoryClientHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/HistoryClientHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/HistoryEmployeeHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/HistoryEmployeeHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/Tellimus.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/Tellimus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/CatalogueHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/CatalogueHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/ClientServerSide.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/ClientServerSide.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerClient.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerEmployee.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerEmployee.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/klientideAndmebaas.json" beforeDir="false" afterPath="$PROJECT_DIR$/klientideAndmebaas.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -156,7 +157,7 @@
       <workItem from="1746370276341" duration="2865000" />
       <workItem from="1746434932181" duration="20805000" />
       <workItem from="1746522938461" duration="33000" />
-      <workItem from="1747050512764" duration="12947000" />
+      <workItem from="1747050512764" duration="20306000" />
     </task>
     <task id="LOCAL−00001" summary="some minor fixes">
       <option name="closed" value="true" />

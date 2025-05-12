@@ -25,7 +25,7 @@ public class CatalogueHandler {
     }
 
     public void show(DataOutputStream dout, Byte type) throws IOException {
-        showAll(dout, type);
+        showAll(dout, type, "");
     }
 
     public void handler(DataOutputStream dout, String cmd, String[] args, ClientServerSide client, Byte type) throws IOException {
@@ -38,17 +38,18 @@ public class CatalogueHandler {
                         .orElse(null);
 
                 // Küsime mitu tükki soovib kasutaja antud toodet osta
-                dout.writeInt(1);
+
                 if (type == Config.CLIENT) {
                     if (toode.getLao_seis() <= 0) {
-                        dout.writeUTF("Kahjuks on antud toode otsas");
-                        showAll(dout, type);
+                        showAll(dout, type, "Kahjuks on antud toode otsas!\n");
                     } else {
+                        dout.writeInt(1);
                         dout.writeUTF("Enter quantity: ");
                         currentSubScreen = SELECT_QUANTITY;
                     }
 
                 } else if (type == Config.EMPLOYEE) {
+                    dout.writeInt(1);
                     dout.writeUTF("Enter new quantity: ");
                     currentSubScreen = CHANGE_QUANTITY;
                 }
@@ -78,7 +79,7 @@ public class CatalogueHandler {
                         System.out.println(client);
                         System.out.println(client.getCart());
                         client.addToode(toode, quantity, jsonManagerClient);
-                        showAll(dout, type);
+                        showAll(dout, type, "");
                     }
                     currentSubScreen = SELECT_PRODUCT;
                 } else {
@@ -103,7 +104,7 @@ public class CatalogueHandler {
                 // teeme praegu nii, et kui muudame koguses 0-ks, siis jääb toode ikka alles, et ei peaks arenduse käigus
                 // iga kord hakkama uut toodet lisama, kui kasutuse käigus sai toode kustutatud
                 jsonReader.muudaKogust(toode.getNumber(), quantity);
-                showAll(dout, type);
+                showAll(dout, type, "");
             }
             catch (NumberFormatException e) {
                 dout.writeInt(1);
@@ -112,18 +113,18 @@ public class CatalogueHandler {
         }
     }
 
-    private void showAll(DataOutputStream dout, Byte type) throws IOException {
+    private void showAll(DataOutputStream dout, Byte type, String msg) throws IOException {
         // näitame kõiki tooteid
         currentSubScreen = SELECT_PRODUCT;
         StringBuilder tooted = new StringBuilder();
         jsonReader.getTooted().forEach(t -> tooted.append(t.toString()).append("\n"));
         dout.writeInt(1);
         if (type == Config.CLIENT) {
-            dout.writeUTF("Products: \n" +
+            dout.writeUTF(msg + "Products: \n" +
                     tooted + "\n" +
                     "Enter name of the product:\nsisestage 'back', et naasta peamenüüsse");
         } else if (type == Config.EMPLOYEE) {
-            dout.writeUTF("Products: \n" +
+            dout.writeUTF(msg + "Products: \n" +
                     tooted + "\n" +
                     "Enter name of the product to change quantity:\nsisestage 'back', et naasta peamenüüsse ");
         }

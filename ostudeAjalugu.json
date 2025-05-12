@@ -18,4 +18,14 @@
       "2|pirn|0.59|28" : 10
     }
   }
+}, {
+  "nimi" : "e f",
+  "email" : "ef@gmail.com",
+  "kliendiID" : "3c29d169-3edf-4067-9b90-83d39b663e68",
+  "tellimuseID" : "d85127b0-a063-458b-ada6-48da5766960d",
+  "ostukorv" : {
+    "tooted" : {
+      "2|pirn|0.59|18" : 10
+    }
+  }
 } ]
