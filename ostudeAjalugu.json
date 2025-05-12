@@ -8,4 +8,14 @@
       "1|õun|0.39|5" : 5
     }
   }
+}, {
+  "nimi" : "a b",
+  "email" : "ab@gmail.com",
+  "kliendiID" : "a451f687-de2f-45d7-b2e4-d4bdd7ab145e",
+  "tellimuseID" : "4a047d46-b112-4d49-9566-a9efeba1afa7",
+  "ostukorv" : {
+    "tooted" : {
+      "2|pirn|0.59|28" : 10
+    }
+  }
 } ]

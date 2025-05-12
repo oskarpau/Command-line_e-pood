@@ -40,7 +40,6 @@ public class CartHandler {
      */
     public void show(DataOutputStream dout, ClientServerSide client) throws IOException {
         // Kuvab ostukorvi sisu ilma täiendava sõnumita
-        System.out.println(client.getCart());
         displayCart(dout, null, client);
     }
 
@@ -136,7 +135,7 @@ public class CartHandler {
      *
      * @param dout DataOutputStream kliendile andmete saatmiseks
      * @param productName Eemaldatava toote nimi
-     * @param cart Kasutaja ostukorv
+     * @param client Klient
      * @throws IOException kui väljundvoolu kirjutamisel tekib viga
      */
     private void handleRemoveProduct(DataOutputStream dout, String productName, ClientServerSide client) throws IOException {
@@ -286,7 +285,6 @@ public class CartHandler {
                         quantity = laoSeis;
                         sb.append("Kogus vähenenud! - ");
                         jsonManagerClient.updateCartJson(client);
-                        System.out.println(client.getCart());
                     }
                 }
 

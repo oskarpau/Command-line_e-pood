@@ -42,6 +42,18 @@ public class Tellimus {
     public UUID getKliendiID() {
         return kliendiID;
     }
+
+    @Override
+    public String toString() {
+        return "Tellimus{" +
+                "nimi='" + nimi + '\'' +
+                ", email='" + email + '\'' +
+                ", kliendiID=" + kliendiID +
+                ", tellimuseID=" + tellimuseID +
+                ", ostukorv=" + ostukorv +
+                '}';
+    }
+
     @JsonProperty
     public UUID getTellimuseID() {
         return tellimuseID;

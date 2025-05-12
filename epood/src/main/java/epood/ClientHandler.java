@@ -151,7 +151,7 @@ public class ClientHandler implements Runnable {
                             historyEmployeeHandler.show(dout);
                             currentScreen = "history_employee";
                         } else if (context.type == Config.CLIENT) {
-                            historyClientHandler.show(dout);
+                            historyClientHandler.show(dout, client);
                             currentScreen = "history_client";
                         }
                     }
@@ -167,7 +167,7 @@ public class ClientHandler implements Runnable {
             case "cart": cartHandler.handler(dout, cmd, args, client); break;
             //case "order": orderHandler.handler(dout, cmd, args, cart); break;
             case "history_employee": historyEmployeeHandler.handler(dout, cmd, args);break;
-            case "history_client": historyClientHandler.handler(dout, cmd, args);break;
+            case "history_client": historyClientHandler.handler(dout, cmd, args, client);break;
             default: {
                 System.out.println("undefined category, smth broken");
             }
