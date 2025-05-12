@@ -5,6 +5,10 @@ import failisuhtlus.Ostukorv;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+
+/**
+ DEPRECATED - tellimuste vormistamsiega tegeleme cartHandleris, sest enamus infot juba kliendi objektiga seotud
+ */
 public class OrderHandler implements Screen {
 
 

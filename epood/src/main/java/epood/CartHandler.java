@@ -1,8 +1,6 @@
 package epood;
 
-import failisuhtlus.JsonManagerClient;
-import failisuhtlus.Ostukorv;
-import failisuhtlus.Toode;
+import failisuhtlus.*;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -24,6 +22,12 @@ public class CartHandler {
 
     /** Kasutaja ostukorvi salvestamiseks */
     private final JsonManagerClient jsonManagerClient = new JsonManagerClient();
+
+    /** Toodete andmebaasi uuendamiseks **/
+    private final JsonReader jsonReader = new JsonReader("andmebaas.json");
+
+    /** Tellimuste lisamiseks **/
+    private final JsonManagerHistory jsonManagerHistory = new JsonManagerHistory();
 
     /**
      * Kuvab ostukorvi sisu ja saadaval olevad tegevused kasutajale.
@@ -58,6 +62,9 @@ public class CartHandler {
                 break;
             case "update_quantity":
                 handleUpdateQuantity(dout, cmd, korv, client);
+                break;
+            case "checkout":
+                handleCheckout(dout, cmd, korv, client);
                 break;
             default:
                 // Tundmatu oleku korral lähtestame põhivaatele
@@ -104,9 +111,15 @@ public class CartHandler {
                 if (korv.getItems().isEmpty()) {
                     displayCart(dout, "Ostukorv on tühi. Lisa kõigepealt tooteid!", korv);
                 } else {
-                    // Tellimuse ekraanile liikumise signaal - käideldakse ClientHandleris
+                    /*// Tellimuse ekraanile liikumise signaal - käideldakse ClientHandleris
                     dout.writeInt(1);
-                    dout.writeUTF("Liikumine tellimuse vormistamisele.");
+                    dout.writeUTF("Liikumine tellimuse vormistamisele.");*/
+                    // Lisasin checkout funktsionaalsuse, hetkel aadressi, telefoninumbriga jne ei arvesta,
+                    // sest selle rakendamine on üsna sarnane nime ja emaili küsimisega ning suurt õpimomenti selles pole
+
+                    currentSubScreen = "checkout";
+                    dout.writeInt(1);
+                    dout.writeUTF("Kas oled kindel, et soovid ostu sooritada? (sisetage 'jah' või 'ei')");
                 }
                 break;
             default:
@@ -261,5 +274,38 @@ public class CartHandler {
 
         dout.writeInt(1);
         dout.writeUTF(sb.toString());
+    }
+
+    private void handleCheckout(DataOutputStream dout, String cmd, Ostukorv cart, ClientServerSide client) throws IOException {
+        if (cmd.equals("ei")) {
+            displayCart(dout, "Tellimust ei sooritatud", cart);
+            currentSubScreen = "view";
+        } else if (cmd.equals("jah")) {
+            // täname ostjat, uuendame laoseisu, lisame tellimuse andmebaasi, tühjendame ostukorvi, saadame emaili
+
+            for (Map.Entry<Toode, Integer> entry : cart.getItems().entrySet()) {
+                jsonReader.vahendaKogust(entry.getKey().getNumber(), entry.getValue());
+            }
+
+            jsonManagerHistory.addTellimusJson(new Tellimus(client.getName(), client.getEmail(), cart));
+            cart.tyhjendaOstukorv();
+
+
+
+            /**
+            Siia tuleb kliendile ja ühele töötajatest emaili saatmine.
+             Töötajate emailid on kirjas tootajateAndmebaasis
+            **/
+
+            currentSubScreen = "view";
+            dout.writeInt(1);
+            dout.writeUTF("Aitäh ostu eest! Arve saadetakse emailile!" +
+                    "\nsisestage 'back', et naasta peamenüüsse ");
+        } else {
+            dout.writeInt(1);
+            dout.writeUTF("Palun sisestage 'jah' või 'ei'.");
+            currentSubScreen = "checkout";
+        }
+
     }
 }

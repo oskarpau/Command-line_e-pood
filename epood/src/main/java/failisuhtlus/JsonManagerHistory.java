@@ -1,8 +1,14 @@
 package failisuhtlus;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import epood.ClientServerSide;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -12,67 +18,56 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class JsonManagerHistory {
-    private static final String FAIL = "ostudeAjalugu.json";
+    private static final String FILE = "ostudeAjalugu.json";
+    private static ObjectMapper objectMapper = new ObjectMapper();
+    private static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private static SimpleModule module = new SimpleModule();
 
-    public List<Tellimus> getTellimused() throws IOException {
+    static {
+        module.addKeyDeserializer(Toode.class, new ToodeKeyDeserializer());
+        module.addKeySerializer(Toode.class, new ToodeKeySerializer());
+        objectMapper.registerModule(module);
+    }
 
-        List<Tellimus> tellimused = new ArrayList<>();
-
-        JSONObject json = getJSON();
-
-        JSONArray tellimusedArray = json.getJSONArray("tellimused");
-
-        for (int i = 0; i < tellimusedArray.length(); i++) {
-            JSONObject tellimus = tellimusedArray.getJSONObject(i);
-            JSONArray tootedArray = tellimus.getJSONArray("tooted");
-            Ostukorv ostukorv = new Ostukorv();
-            for (int j = 0; j < tootedArray.length(); j++) {
-                JSONObject toode = tootedArray.getJSONObject(j);
-                ostukorv.addToode(new Toode(toode.getInt("tootenumber"), toode.getString("nimi"), BigDecimal.valueOf(toode.getDouble("hind")), toode.getInt("lao seis")), toode.getInt("kogus"));
+    /**
+     * Tehtud tellimuste lugemiseks
+     * @return tagastab listi kõikidest tellimustest
+     * @throws IOException
+     */
+    public List<Tellimus> readJson() throws IOException {
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        lock.readLock().lock();
+        try {
+            File file = new File(FILE);
+            if (!file.exists()) {
+                return new ArrayList<>();
             }
-
-            tellimused.add(new Tellimus(tellimus.getString("nimi"), tellimus.getString("email"), ostukorv));
-
+            return objectMapper.readValue(file, new TypeReference<List<Tellimus>>() {});
+        } finally {
+            lock.readLock().unlock();
+            objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, true);
         }
-        return tellimused;
-
     }
 
-    public void addTellimus(Tellimus tellimus) throws IOException {
-        JSONObject json = getJSON();
+    /**
+     * Tellimuste lisamiseks
+     * @param tellimus uus klient
+     * @throws IOException
+     */
+    public void addTellimusJson(Tellimus tellimus) throws IOException {
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false); // FAIL_ON_EMPTY_BEANS, et töötaks ka tühja ostukorviga
+        lock.writeLock().lock();
+        try {
+            List<Tellimus> clients = readJson();
+            clients.add(tellimus);
 
-        JSONArray tellimusedArray = json.getJSONArray("tellimused");
-        JSONObject tellimusJson = new JSONObject();
-        tellimusJson.put("nimi", tellimus.getNimi());
-        tellimusJson.put("email", tellimus.getEmail());
-        for (Map.Entry<Toode, Integer> entry : tellimus.getOstukorv().getItems().entrySet()) {
-            JSONArray tootedArray = json.getJSONArray("tooted");
-
-            JSONObject toodeJson = new JSONObject();
-            toodeJson.put("tootenumber", entry.getKey().getNumber());
-            toodeJson.put("nimi", entry.getKey().getNimi());
-            toodeJson.put("hind", entry.getKey().getHind());
-            toodeJson.put("lao seis", entry.getKey().getLao_seis());
-            toodeJson.put("kogus", entry.getValue());
-            tootedArray.put(toodeJson);
-        }
-
-        tellimusedArray.put(tellimusJson);
-        updateJson(json);
-    }
-
-    private JSONObject getJSON() throws IOException {
-        String content;
-        content = new String(Files.readAllBytes(Paths.get("andmebaas.json")));
-
-        return new JSONObject(content);
-    }
-
-    private void updateJson(JSONObject json) throws IOException {
-        try (FileWriter fileWriter = new FileWriter(FAIL)) {
-            fileWriter.write(json.toString());
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(FILE), clients);
+        } finally {
+            lock.writeLock().unlock();
+            objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, true);
         }
     }
 }

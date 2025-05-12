@@ -92,4 +92,20 @@ public class JsonReader {
             fileWriter.write(json.toString());
         }
     }
+
+    public void vahendaKogust(int tootenumber, int vahendamiseKogus) throws IOException {
+        JSONObject json = getJSON();
+
+        JSONArray tootedArray = json.getJSONArray("tooted");
+
+        for (int i = 0; i < tootedArray.length(); i++) {
+            JSONObject toode = tootedArray.getJSONObject(i);
+            if (toode.getInt("tootenumber") == tootenumber) {
+                int vanaKogus = toode.getInt("lao seis");
+                tootedArray.getJSONObject(i).put("lao seis", vanaKogus - vahendamiseKogus);
+                updateJson(json);
+                return;
+            }
+        }
+    }
 }

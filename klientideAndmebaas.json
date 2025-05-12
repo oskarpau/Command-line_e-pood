@@ -3,7 +3,8 @@
   "email" : "ab@gmail.com",
   "cart" : {
     "tooted" : {
-      "1|õun|0.39|56" : 10
+      "1|õun|0.39|56" : 10,
+      "2|pirn|0.59|32" : 2
     }
   }
 }, {
@@ -20,6 +21,14 @@
   "cart" : {
     "tooted" : {
       "1|õun|0.39|56" : 10
+    }
+  }
+}, {
+  "name" : "Mari Maasikas",
+  "email" : "marimaasikas@gmail.com",
+  "cart" : {
+    "tooted" : {
+      "1|õun|0.39|54" : 52
     }
   }
 } ]

@@ -99,7 +99,6 @@ public class ClientHandler implements Runnable {
             if (!currentScreen.equals("main")) {
                 showMain(dout);
                 currentScreen = "main";
-                System.out.println("here");
                 System.out.println(currentScreen);
 
             } else {
@@ -138,7 +137,7 @@ public class ClientHandler implements Runnable {
                         }
 
                     }
-                    case "order" -> {
+                    /*case "order" -> {
                         if (context.type == Config.CLIENT) {
                             orderHandler.show(dout);
                             currentScreen = "order";
@@ -146,7 +145,7 @@ public class ClientHandler implements Runnable {
                             dout.writeInt(1);
                             dout.writeUTF("invalid command, for common commands type: help");
                         }
-                    }
+                    }*/
                     case "history" -> {
                         if (context.type == Config.EMPLOYEE) {
                             historyEmployeeHandler.show(dout);
@@ -166,7 +165,7 @@ public class ClientHandler implements Runnable {
             case "catalogue": catalogueHandler.handler(dout, cmd, args, client, context.type); break;
             case "search": searchHandler.handler(dout, cmd, args, cart); break;
             case "cart": cartHandler.handler(dout, cmd, args, client.getCart(), client); break;
-            case "order": orderHandler.handler(dout, cmd, args, cart); break;
+            //case "order": orderHandler.handler(dout, cmd, args, cart); break;
             case "history_employee": historyEmployeeHandler.handler(dout, cmd, args);break;
             case "history_client": historyClientHandler.handler(dout, cmd, args);break;
             default: {
@@ -180,7 +179,7 @@ public class ClientHandler implements Runnable {
     private void showMain(DataOutputStream dout) throws IOException {
         if (context.type == Config.CLIENT) {
             dout.writeInt(1);
-            dout.writeUTF("Palun valige üks alljärgnevatest:\ncatalogue; search; cart; order; history; exit\nsisestage 'back', et naasta peamenüüsse");
+            dout.writeUTF("Palun valige üks alljärgnevatest:\ncatalogue; search; cart; history; exit\nsisestage 'back', et naasta peamenüüsse");
         } else if (context.type == Config.EMPLOYEE) {
             dout.writeInt(1);
             dout.writeUTF("Palun valige üks alljärgnevatest:\ncatalogue; search; history; exit\nsisestage 'back', et naasta peamenüüsse");
@@ -191,7 +190,7 @@ public class ClientHandler implements Runnable {
 
     private void help(DataOutputStream dout) throws IOException {
         System.out.println("helping");
-        String[] cmdList = {"exit", "help", "back", "catalogue", "search", "cart", "order"};
+        String[] cmdList = {"exit", "help", "back", "catalogue", "search", "cart"};
         dout.writeInt(cmdList.length);
         for (String cmd : cmdList) {
             dout.writeUTF(cmd);
