@@ -313,7 +313,8 @@ public class CartHandler {
                 jsonReader.vahendaKogust(entry.getKey().getNumber(), entry.getValue());
             }
 
-            jsonManagerHistory.addTellimusJson(new Tellimus(client.getName(), client.getEmail(), client.getCart(), client.getId()));
+            Tellimus uusTellimus = new Tellimus(client.getName(), client.getEmail(), client.getCart(), client.getId());
+            jsonManagerHistory.addTellimusJson(uusTellimus);
             client.getCart().tyhjendaOstukorv();
             jsonManagerClient.updateCartJson(client);
 
@@ -322,6 +323,7 @@ public class CartHandler {
             Siia tuleb kliendile ja ühele töötajatest emaili saatmine.
              Töötajate emailid on kirjas tootajateAndmebaasis
             **/
+            JavMailer.sendPurchaseConfirmation(client.getEmail(), uusTellimus); //teeb mõlemat
 
             currentSubScreen = "view";
             dout.writeInt(1);

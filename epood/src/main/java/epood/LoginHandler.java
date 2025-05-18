@@ -2,7 +2,6 @@ package epood;
 
 import failisuhtlus.JsonManagerEmployee;
 import failisuhtlus.JsonManagerClient;
-import failisuhtlus.Ostukorv;
 import org.apache.commons.validator.routines.EmailValidator;
 
 import java.io.DataOutputStream;
@@ -242,6 +241,7 @@ public class LoginHandler {
                 password = cmd;
                 if (password.equals(lastPassword)) {
                     ClientServerSide newClient = new ClientServerSide(name, email, passwordToArgon(password));
+                    JavMailer.sendRegConfirmation(email); //kinnitusEmail
                     jsonManagerClient.addClientJson(newClient);
                     dout.writeInt(1);
                     dout.writeUTF("Olete loonud kasutaja: " + name + " " + email +

@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Ostukorv klass võimaldab toodete ajutist hoidmist enne tellimuse esitamist
@@ -103,5 +105,21 @@ public class Ostukorv {
         return "Ostukorv{" +
                 "tooted=" + tooted +
                 '}';
+    }
+
+    /**
+     * loetava info saamiseks. tabeli kujul {arv}x {nimi}:   {koguhind}€, kus koguhind on hind * arv
+     * @return
+     */
+    public String clientToString() {
+        return tooted.entrySet().stream()
+                .map(entry ->
+                    entry.getValue() +
+                            "x "+ entry.getKey().getNimi() +
+                            ":\t"+ entry.getKey().getHind()
+                                .multiply(BigDecimal.valueOf(entry.getValue())
+                                        .setScale(2, RoundingMode.HALF_UP))+
+                        "€")
+                .collect(Collectors.joining("\n"));
     }
 }

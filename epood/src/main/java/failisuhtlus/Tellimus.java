@@ -2,6 +2,7 @@ package failisuhtlus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,8 +55,22 @@ public class Tellimus {
                 '}';
     }
 
+    /**
+     * tellimuse info ostjale tagasisideks; arve
+     * @return
+     */
+    public String clientToString() {
+        return "Tellimus nr " + tellimuseID+ "\n\n"+
+                "kasutajale " + nimi + ", " + email +  "(id: " + kliendiID +")\n"+
+                "Ost:\n" +
+                ostukorv.clientToString() +"\n"+
+                "Kokku tuleb tasuda "+ostukorv.getKoguHind().setScale(2, RoundingMode.HALF_UP)+"€";
+    }
+
     @JsonProperty
     public UUID getTellimuseID() {
         return tellimuseID;
     }
+
+
 }
