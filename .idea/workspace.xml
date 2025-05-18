@@ -6,12 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="b13b767d-aa6e-4f19-b987-096bb5d85783" name="Changes" comment="also did cartHandler like Oliver, but he was first, merge some parts if needed">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/CatalogueHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/CatalogueHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/ClientServerSide.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/ClientServerSide.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/LoginHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerClient.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerEmployee.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/failisuhtlus/JsonManagerEmployee.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/klientideAndmebaas.json" beforeDir="false" afterPath="$PROJECT_DIR$/klientideAndmebaas.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/ClientHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/ClientHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epood/src/main/java/epood/SearchHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/epood/src/main/java/epood/SearchHandler.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,7 +57,6 @@
   &quot;keyToString&quot;: {
     &quot;Application.Client.executor&quot;: &quot;Run&quot;,
     &quot;Application.Server.executor&quot;: &quot;Run&quot;,
-    &quot;Maven.epood [clean,install].executor&quot;: &quot;Run&quot;,
     &quot;Maven.epood [clean].executor&quot;: &quot;Run&quot;,
     &quot;Maven.epood [compile].executor&quot;: &quot;Run&quot;,
     &quot;Maven.epood [install].executor&quot;: &quot;Run&quot;,
@@ -86,12 +81,7 @@
       <recent name="C:\Command-line_e-pood" />
     </key>
   </component>
-  <component name="RunAnythingCache">
-    <option name="myCommands">
-      <command value="mvn clean install" />
-    </option>
-  </component>
-  <component name="RunManager" selected="Application.Client">
+  <component name="RunManager">
     <configuration name="Client" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="epood.Client" />
       <module name="epood" />
@@ -154,10 +144,7 @@
       <workItem from="1745319721910" duration="4203000" />
       <workItem from="1745690031190" duration="4368000" />
       <workItem from="1746345471975" duration="4734000" />
-      <workItem from="1746370276341" duration="2865000" />
-      <workItem from="1746434932181" duration="20805000" />
-      <workItem from="1746522938461" duration="33000" />
-      <workItem from="1747050512764" duration="20306000" />
+      <workItem from="1746370276341" duration="2791000" />
     </task>
     <task id="LOCAL−00001" summary="some minor fixes">
       <option name="closed" value="true" />
@@ -185,17 +172,6 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="Vcs.Log.Tabs.Properties">
-    <option name="TAB_STATES">
-      <map>
-        <entry key="MAIN">
-          <value>
-            <State />
-          </value>
-        </entry>
-      </map>
-    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="some minor fixes" />

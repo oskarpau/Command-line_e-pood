@@ -163,7 +163,7 @@ public class ClientHandler implements Runnable {
                 break;
 
             case "catalogue": catalogueHandler.handler(dout, cmd, args, client, context.type); break;
-            case "search": searchHandler.handler(dout, cmd, args, cart); break;
+            case "search": searchHandler.handler(dout, cmd, args, client); break;
             case "cart": cartHandler.handler(dout, cmd, args, client); break;
             //case "order": orderHandler.handler(dout, cmd, args, cart); break;
             case "history_employee": historyEmployeeHandler.handler(dout, cmd, args);break;
