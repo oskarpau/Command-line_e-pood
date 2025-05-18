@@ -315,8 +315,6 @@ public class CartHandler {
 
             Tellimus uusTellimus = new Tellimus(client.getName(), client.getEmail(), client.getCart(), client.getId());
             jsonManagerHistory.addTellimusJson(uusTellimus);
-            client.getCart().tyhjendaOstukorv();
-            jsonManagerClient.updateCartJson(client);
 
 
             /**
@@ -324,6 +322,10 @@ public class CartHandler {
              Töötajate emailid on kirjas tootajateAndmebaasis
             **/
             JavMailer.sendPurchaseConfirmation(client.getEmail(), uusTellimus); //teeb mõlemat
+
+            client.getCart().tyhjendaOstukorv();
+            jsonManagerClient.updateCartJson(client);
+
 
             currentSubScreen = "view";
             dout.writeInt(1);
